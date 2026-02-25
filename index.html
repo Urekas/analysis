@@ -142,7 +142,7 @@
             .sidebar, .bottom-panel, .sidebar-toggle-area { display: none !important; }
             .workspace { flex: none; height: 45vh; width: 100%; border-bottom: 2px solid var(--accent); }
             .scene-sidebar { width: 100%; flex: 1; border-left: none; height: 55vh; }
-            .scene-sidebar.closed { width: 100%; height: auto; } 
+            .scene-sidebar.closed { width: 100%; height: 55vh; } /* 모바일은 접기/펴기 버튼이 없으므로 항상 열림 상태 유지 */
             .top-menu { top: 10px; right: 10px; gap: 5px; }
             .top-btn { padding: 5px 10px; font-size: 0.8rem; }
             #status-msg { top: 10px; font-size: 0.8rem; padding: 5px 15px; width: 60%; text-align: center; }
@@ -162,10 +162,14 @@
 
         <label for="imgInput" class="tool-btn" style="background:#2ecc71; color:white; border:none;" title="사진 열기"><i class="fa-solid fa-image"></i></label>
         <input type="file" id="imgInput" class="file-input" accept="image/*">
+        
         <label for="videoInput" class="tool-btn" style="background:#3498db; color:white; border:none;" title="파일 영상 열기 (PC/Mac용)"><i class="fa-solid fa-file-video"></i></label>
         <input type="file" id="videoInput" class="file-input" accept="video/*">
+        
+        <!-- 🔥 수정된 데이터 열기 입력 필드 -->
         <label for="dataInput" class="tool-btn" style="background:#9b59b6; color:white; border:none;" title="데이터 열기 (XML/CSV)"><i class="fa-solid fa-file-lines"></i></label>
         <input type="file" id="dataInput" class="file-input" accept=".xml,.csv">
+        
         <button class="tool-btn" style="background:#e63946; color:white; border:none;" onclick="loadYoutubePrompt()" title="유튜브 주소 열기"><i class="fa-brands fa-youtube"></i></button>
         <div class="divider"></div>
         <button class="tool-btn" id="btn-rewind" onclick="videoControl('rewind')" title="-5초 이동"><i class="fa-solid fa-backward-step"></i></button>
@@ -272,22 +276,22 @@
             <div id="m-guide" class="m-content active">
                 <h3 style="color:#f39c12; margin-top:0; font-size:1.1rem;">🔥 [NEW] 구글 드라이브 연동 (OAuth)</h3>
                 <p style="font-size:0.9rem; color:#ccc; margin-bottom:15px;">
-                   좌측 상단 구글 드라이브 버튼을 누르면 내 클라우드 저장소 폴더가 열리며, 영상(MP4)과 데이터(XML)를 바로 가져올 수 있습니다.
+                    좌측 상단 구글 드라이브 버튼을 누르면 내 클라우드 저장소 폴더가 열리며, 영상(MP4)과 데이터(XML)를 바로 가져올 수 있습니다.
                 </p>
 
                 <h3 style="color:#e74c3c; font-size:1.1rem;">1. 🎥 미디어 및 데이터 불러오기</h3>
                 <p style="font-size:0.9rem; color:#ccc; margin-bottom:15px;">
-                   - 드롭박스 연동 시 주소창에 <code>?video=영상URL&data=XMLURL</code> 형식으로 자동 로드할 수 있습니다. (공유링크 끝을 dl=1로 변경)
+                    - 드롭박스 연동 시 주소창에 <code>?video=영상URL&data=XMLURL</code> 형식으로 자동 로드할 수 있습니다. (공유링크 끝을 dl=1로 변경)
                 </p>
                 
                 <h3 style="color:#3498db; font-size:1.1rem;">2. ✏️ 전술 드로잉 및 태깅</h3>
                 <p style="font-size:0.9rem; color:#ccc; margin-bottom:15px;">
-                   - <b>스마트 선수 태그</b>: 선수의 발밑을 클릭하면 지시선과 태그가 자동 생성됩니다.
+                    - <b>스마트 선수 태그</b>: 선수의 발밑을 클릭하면 지시선과 태그가 자동 생성됩니다.
                 </p>
 
                 <h3 style="color:#f1c40f; font-size:1.1rem;">3. 🎬 고화질 시퀀스 추출</h3>
                 <p style="font-size:0.9rem; color:#ccc; margin-bottom:15px;">
-                    장면을 저장(💾)하고 클래퍼보드(🎬) 버튼을 누르면 고화질 분석 영상이 자동 생성됩니다.
+                     장면을 저장(💾)하고 클래퍼보드(🎬) 버튼을 누르면 고화질 분석 영상이 자동 생성됩니다.
                 </p>
             </div>
 
@@ -452,17 +456,24 @@
                         fetchUrl = fetchUrl.replace(/(www\.)?dropbox\.com/, "dl.dropboxusercontent.com");
                         if (!fetchUrl.includes("dl=1")) fetchUrl = fetchUrl.replace("dl=0", "dl=1");
                     }
+                    // 🔥 추가: 구글 드라이브 공유 링크인 경우 직통 다운로드 주소(uc?export)로 변환
+                    else if (fetchUrl.includes("drive.google.com")) {
+                        const match = fetchUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || fetchUrl.match(/id=([a-zA-Z0-9_-]+)/);
+                        if (match && match[1]) {
+                            fetchUrl = `https://drive.google.com/uc?export=download&id=${match[1]}`;
+                        }
+                    }
 
                     try {
                         let response;
                         try {
-                            // 1. 직접 호출 시도 (드롭박스는 dl.dropboxusercontent.com 덕분에 99% 여기서 성공)
+                            // 1. 직접 호출 시도 (드롭박스/구글드라이브 직접 다운로드 주소)
                             response = await fetch(fetchUrl);
                             if (!response.ok) throw new Error("직접 호출 실패");
                         } catch (err) {
                             console.warn("직접 호출 실패, 프록시 우회 시도...", err);
                             // 2. 다른 링크이거나 직접 호출 실패 시 allorigins 프록시 사용
-                            response = await fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(dataUrl));
+                            response = await fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(fetchUrl));
                             if (!response.ok) throw new Error("프록시 호출도 실패");
                         }
 
@@ -718,13 +729,14 @@
                 const groupHeader = document.createElement('div');
                 groupHeader.className = 'data-group-header';
                 groupHeader.innerHTML = `
-                    <i class="fa-solid fa-chevron-down group-toggle-icon"></i> 
+                    <i class="fa-solid fa-chevron-right group-toggle-icon"></i> 
                     <span>${code}</span> 
                     <span class="group-count">${items.length}</span>
                 `;
 
                 const groupContent = document.createElement('div');
                 groupContent.className = 'data-group-content';
+                groupContent.style.display = 'none'; // 🔥 기본적으로 접혀있도록 설정
                 
                 groupHeader.onclick = () => {
                     const isClosed = groupContent.style.display === 'none';
@@ -867,6 +879,34 @@
         });
         document.getElementById('videoInput').addEventListener('change', function(e) {
             const f = e.target.files[0]; if(!f) return; switchMode('local'); const url = URL.createObjectURL(f); localVideo.src = url; statusMsg.innerText = "로컬 비디오 모드"; setTimeout(resizeCanvas, 500);
+        });
+        
+        // 🔥 수정: 로컬 데이터 파일(XML/CSV) 불러오기 로직 추가
+        document.getElementById('dataInput').addEventListener('change', function(e) {
+            const f = e.target.files[0]; 
+            if(!f) return; 
+            
+            const isCsv = f.name.toLowerCase().endsWith('.csv');
+            const r = new FileReader(); 
+            
+            r.onload = function(d) { 
+                if(isCsv) {
+                    parseDartfishCSV(d.target.result); 
+                } else {
+                    parseSportsCodeXML(d.target.result); 
+                }
+                openTab('tab-data');
+                showStatus("로컬 데이터 파일 로드 완료!");
+            }; 
+            
+            // CSV 파일일 경우 한글 깨짐 방지를 위해 EUC-KR로 읽기 시도, 실패시 UTF-8 사용
+            if(isCsv) {
+                r.readAsText(f, 'EUC-KR');
+            } else {
+                r.readAsText(f, 'UTF-8');
+            }
+            
+            e.target.value = ''; // 초기화하여 동일 파일 재선택 가능하게 함
         });
         
         window.onYouTubeIframeAPIReady = function() { 
