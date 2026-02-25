@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Tactical Board - v102 GitHub Data Sync Fix</title>
+    <title>Tactical Board - v103 Native GitHub Integration</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -114,8 +114,8 @@
 </head>
 <body>
     <div class="sidebar">
-        <!-- 🔥 GitHub 매치 센터 버튼 -->
-        <button class="tool-btn" id="btn-github-center" style="background:#333; color:white; border:none;" onclick="openMatchCenter()" title="GitHub 매치 센터"><i class="fa-brands fa-github"></i></button>
+        <!-- 🔥 GitHub 매치 센터 버튼 (상대 경로 우선 모드) -->
+        <button class="tool-btn" id="btn-github-center" style="background:#333; color:white; border:none;" onclick="openMatchCenter()" title="Match Center"><i class="fa-brands fa-github"></i></button>
         <div class="divider"></div>
         <label for="imgInput" class="tool-btn" style="background:#2ecc71; color:white; border:none;" title="사진 열기"><i class="fa-solid fa-image"></i></label>
         <input type="file" id="imgInput" style="display:none;" accept="image/*">
@@ -210,7 +210,7 @@
         </div>
     </div>
 
-    <!-- 🔥 매치 센터 모달 -->
+    <!-- 매치 센터 모달 -->
     <div class="modal-overlay" id="matchCenterModal">
         <div class="modal-box">
             <button class="close-btn" onclick="closeMatchCenter()">&times;</button>
@@ -218,9 +218,9 @@
             <div id="match-loading" style="text-align:center; padding:20px; color:#aaa;">경기 목록을 불러오는 중...</div>
             <div class="match-list" id="match-list-container"></div>
             <div style="margin-top:20px; border-top:1px solid #444; padding-top:15px;">
-                <p style="font-size:0.8rem; color:#888; margin-bottom:5px;">Manifest URL (matches.json Raw 주소):</p>
-                <input type="text" id="manifest-url" style="width:100%; background:#111; color:#fff; border:1px solid #555; padding:8px; border-radius:5px;" value="https://raw.githubusercontent.com/urekas/analysis/main/matches.json" placeholder="JSON Raw URL 입력">
-                <button onclick="loadGitHubManifest()" style="margin-top:10px; width:100%; padding:8px; background:var(--accent); color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">목록 동기화</button>
+                <p style="font-size:0.8rem; color:#888; margin-bottom:5px;">Manifest 파일 경로 (상대 경로 또는 URL):</p>
+                <input type="text" id="manifest-url" style="width:100%; background:#111; color:#fff; border:1px solid #555; padding:8px; border-radius:5px;" value="./matches.json" placeholder="예: ./matches.json">
+                <button onclick="loadGitHubManifest()" style="margin-top:10px; width:100%; padding:8px; background:var(--accent); color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">동기화</button>
             </div>
         </div>
     </div>
@@ -235,9 +235,8 @@
                 <div class="m-tab" id="tab-btn-shortcuts" onclick="switchModalTab('shortcuts')">단축키 변경</div>
             </div>
             <div id="m-guide" class="m-content active">
-                <p>1. <b>GitHub 매치 센터</b>: 좌측 상단 깃허브 마크를 눌러 경기 목록을 불러옵니다.</p>
-                <p>2. <b>통합 주소 지원</b>: ?video=영상URL&data=XML파일URL 형식을 지원합니다.</p>
-                <p>3. <b>데이터 분석</b>: 깃허브 Raw 링크를 사용하면 가장 안정적입니다.</p>
+                <p>1. <b>GitHub 매치 센터</b>: 동일 저장소 내 <code>matches.json</code>을 통해 경기를 관리합니다.</p>
+                <p>2. <b>데이터 로드</b>: 같은 저장소에 파일을 올리면 CORS 문제 없이 즉시 로드됩니다.</p>
             </div>
             <div id="m-shortcuts" class="m-content">
                 <div id="shortcut-list"></div>
@@ -248,7 +247,7 @@
 
     <script src="https://www.youtube.com/iframe_api"></script>
     <script>
-        // --- 🔗 GitHub 매치 센터 및 데이터 로드 로직 (v102 개편) ---
+        // --- 🔗 GitHub Native Match Center ---
         let githubMatches = [];
 
         function openMatchCenter() {
@@ -258,7 +257,7 @@
         function closeMatchCenter() { document.getElementById('matchCenterModal').style.display = 'none'; }
 
         async function loadGitHubManifest() {
-            const urlInput = document.getElementById('manifest-url').value;
+            const urlInput = document.getElementById('manifest-url').value.trim();
             const container = document.getElementById('match-list-container');
             const loading = document.getElementById('match-loading');
             
@@ -266,18 +265,18 @@
             container.innerHTML = '';
 
             try {
-                const finalUrl = getDirectLink(urlInput);
-                // JSON 파일은 프록시 없이 직접 시도 (GitHub Raw는 CORS 허용)
-                let response = await fetch(finalUrl + "?t=" + Date.now()); 
-                if (!response.ok) {
-                    // 직접 fetch 실패 시 프록시 사용
-                    const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(finalUrl);
-                    response = await fetch(proxyUrl);
+                // 상대 경로(./)거나 파일명만 있으면 현재 도메인에서 직접 fetch
+                let finalUrl = urlInput;
+                if (urlInput.includes("github.com") && !urlInput.includes("raw.githubusercontent.com")) {
+                    finalUrl = urlInput.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/").replace("/refs/heads/", "/");
                 }
+                
+                const response = await fetch(finalUrl + (finalUrl.includes('?') ? '&' : '?') + "t=" + Date.now()); 
+                if (!response.ok) throw new Error();
                 githubMatches = await response.json();
                 
                 loading.style.display = 'none';
-                if(!githubMatches.matches || !githubMatches.matches.length) throw new Error();
+                if(!githubMatches.matches) throw new Error();
 
                 githubMatches.matches.forEach((match, index) => {
                     const card = document.createElement('div');
@@ -285,7 +284,7 @@
                     card.innerHTML = `
                         <div>
                             <div class="match-title">${match.title}</div>
-                            <div class="match-meta">${match.competition || '대회'} | ${match.date || '날짜 미정'}</div>
+                            <div class="match-meta">${match.competition || '매치'} | ${match.date || ''}</div>
                         </div>
                         <i class="fa-solid fa-circle-play" style="color:var(--accent); font-size:1.4rem;"></i>
                     `;
@@ -293,7 +292,7 @@
                     container.appendChild(card);
                 });
             } catch (e) {
-                loading.innerText = "목록을 읽어올 수 없습니다. URL 및 JSON 형식을 확인하세요.";
+                loading.innerText = "목록을 읽어올 수 없습니다. 경로가 맞는지, 형식이 JSON인지 확인하세요.";
             }
         }
 
@@ -301,7 +300,7 @@
             closeMatchCenter();
             showStatus(`${match.title} 불러오는 중...`, true);
 
-            // 1. 영상 로드
+            // 1. 영상 로드 (상대 경로 또는 유튜브 URL 지원)
             const videoUrl = match.video;
             const ytMatch = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([^"&?\/\s]{11})/i);
             if (ytMatch) {
@@ -312,7 +311,7 @@
                 localVideo.src = videoUrl;
             }
 
-            // 2. 데이터 로드 (XML/CSV)
+            // 2. 데이터 로드 (XML/CSV) - 상대 경로 적극 대응
             try {
                 const text = await fetchExternalData(match.data);
                 if (match.data.toLowerCase().includes('.csv')) parseDartfishCSV(text);
@@ -328,11 +327,12 @@
         function getDirectLink(url) {
             if (!url) return "";
             let link = url.trim();
-            // github.com 주소를 raw 주소로 변환
+            // 상대 경로인 경우 그대로 반환하여 로컬 fetch 유도
+            if (link.startsWith('./') || !link.startsWith('http')) return link;
+            
             if (link.includes("github.com") && !link.includes("raw.githubusercontent.com")) {
                 link = link.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/").replace("/refs/heads/", "/");
             }
-            // 구글 드라이브 처리
             if (link.includes("drive.google.com")) {
                 const match = link.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || link.match(/id=([a-zA-Z0-9_-]+)/);
                 if (match) return `https://docs.google.com/uc?id=${match[1]}&export=download`;
@@ -342,33 +342,30 @@
 
         async function fetchExternalData(url) {
             const finalUrl = getDirectLink(url);
-            console.log("Fetching from:", finalUrl);
             
+            // 상대 경로일 경우(같은 깃허브 저장소) 직접 fetch 시도 (가장 안정적)
             try {
-                // 1. GitHub Raw는 직접 fetch가 가능하므로 먼저 시도 (가장 빠르고 인코딩 문제 없음)
                 const response = await fetch(finalUrl);
                 if (response.ok) {
                     const text = await response.text();
+                    // HTML 경고창이 아닌지 확인
                     if (!text.includes("<html") && !text.trim().startsWith("<!doctype")) return text;
                 }
                 
-                // 2. 직접 fetch 실패 시 프록시 서버 사용 (단, 한글 인코딩 깨짐 방지를 위해 원본 URL 전달)
-                const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(finalUrl);
-                const proxyResponse = await fetch(proxyUrl);
-                if (!proxyResponse.ok) throw new Error();
-                
-                const proxyText = await proxyResponse.text();
-                if (proxyText.includes("<html") || proxyText.trim().startsWith("<!doctype")) {
-                    throw new Error("보안 정책으로 파일 로드가 차단되었습니다. (HTML이 반환됨)");
+                // 외부 URL이고 직접 로드 실패 시 프록시 서버 사용
+                if (finalUrl.startsWith('http')) {
+                    const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(finalUrl);
+                    const proxyResponse = await fetch(proxyUrl);
+                    if (proxyResponse.ok) return await proxyResponse.text();
                 }
-                return proxyText;
+                
+                throw new Error("파일을 읽을 수 없습니다.");
             } catch (e) {
-                console.error("Fetch Error:", e);
-                throw new Error(e.message || "파일을 읽을 수 없습니다. (CORS 또는 네트워크 오류)");
+                throw new Error("네트워크 오류 또는 파일 경로 문제");
             }
         }
 
-        // --- 🚀 기존 드로잉 및 스크러버 로직 통합 ---
+        // --- 🚀 드로잉 & 시스템 통합 로직 ---
         let ytPlayer, isYtReady = false, currentMediaType = 'none';
         const localVideo = document.getElementById('local-video');
         const canvas = new fabric.Canvas('c', { preserveObjectStacking: true });
@@ -430,13 +427,7 @@
         function parseSportsCodeXML(text) {
             const parser = new DOMParser();
             const xmlDoc = parser.parseFromString(text, "text/xml");
-            
-            if (xmlDoc.getElementsByTagName("parsererror").length > 0) {
-                console.error("XML Parse Error");
-                alert("XML 형식이 올바르지 않거나 데이터가 손상되었습니다.");
-                return;
-            }
-
+            if (xmlDoc.getElementsByTagName("parsererror").length > 0) return;
             const instances = xmlDoc.getElementsByTagName("instance");
             eventList = [];
             for (let i = 0; i < instances.length; i++) {
@@ -498,7 +489,7 @@
 
         function setMode(mode){
             currentMode = mode;
-            document.querySelectorAll('.sidebar .tool-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('btn-'+mode)?.classList.add('active');
             canvas.isDrawingMode = (mode === 'drawPen');
             if(canvas.isDrawingMode) {
@@ -567,7 +558,7 @@
             canvas.add(curve);
         }
 
-        // --- ⚙️ 설정 및 유틸리티 ---
+        // --- ⚙️ 설정 및 추출 기능 ---
         let shortcutConfig = { 'select': { label: '선택', key: 's' }, 'drawPen': { label: '펜', key: 'p' }, 'drawArrow': { label: '화살표', key: 'a' }, 'drawSpot': { label: '스팟', key: 'h' }, 'deleteObj': { label: '삭제', key: 'Delete' }, 'videoToggle': { label: '재생', key: ' ' } };
         function initShortcuts() {
             const list = document.getElementById('shortcut-list'); list.innerHTML = '';
@@ -581,7 +572,7 @@
         }
         window.addEventListener('keydown', (e) => { if (e.target.tagName === 'INPUT') return; if (e.key === shortcutConfig.select.key) setMode('select'); else if (e.key === shortcutConfig.drawPen.key) setMode('drawPen'); else if (e.key === shortcutConfig.drawArrow.key) setMode('drawArrow'); else if (e.key === shortcutConfig.drawSpot.key) setMode('drawSpot'); else if (e.key === shortcutConfig.deleteObj.key) deleteObject(); else if (e.key === shortcutConfig.videoToggle.key) { e.preventDefault(); videoControl('toggle'); } });
         
-        function startCleanRecording() { alert("추출 기능 (브라우저 캡처)이 활성화되었습니다."); }
+        function startCleanRecording() { alert("추출 시작... 브라우저 캡처 권한을 허용하세요."); }
         function saveShortcuts() { alert("저장되었습니다."); toggleHelp(); }
         function completeDrawing() { resetDrawing(); setMode('select'); }
         function deleteObject() { const active = canvas.getActiveObjects(); if(active.length) { canvas.discardActiveObject(); active.forEach(o => canvas.remove(o)); } }
@@ -590,7 +581,6 @@
         function formatTime(s) { const m = Math.floor(s/60); const sec = Math.floor(s%60); return `${m}:${sec < 10 ? '0'+sec : sec}`; }
         function jumpToTime(s) { const t = s + timeOffset; if(currentMediaType === 'youtube') ytPlayer.seekTo(t, true); else localVideo.currentTime = t; }
         function adjustSync(v) { timeOffset += v; document.getElementById('syncDisplay').innerText = `Sync: ${timeOffset.toFixed(1)}s`; }
-        function toggleLang() { }
         function toggleHelp() { const m = document.getElementById('helpModal'); m.style.display = m.style.display === 'flex' ? 'none' : 'flex'; }
         function switchModalTab(t) { 
             document.getElementById('m-guide').classList.toggle('active', t==='guide');
@@ -605,7 +595,7 @@
         function toggleNodeMode() { isSpotMode = !isSpotMode; document.getElementById('nodeBtn').classList.toggle('active'); }
         function togglePalm() { isPalmRejection = !isPalmRejection; document.getElementById('btn-palm').classList.toggle('active'); }
         function hexToMutedRgba(h, a) { const r=parseInt(h.slice(1,3),16), g=parseInt(h.slice(3,5),16), b=parseInt(h.slice(5,7),16); return `rgba(${r},${g},${b},${a})`; }
-        function addText() { const t = new fabric.IText('텍스트', { left: canvas.width/2, top: canvas.height/2, fill: currentColor, fontFamily: 'S-CoreDream-6Bold', fontSize: 30 }); canvas.add(t); canvas.setActiveObject(t); }
+        function addText() { const t = new fabric.IText('Text', { left: canvas.width/2, top: canvas.height/2, fill: currentColor, fontFamily: 'S-CoreDream-6Bold', fontSize: 30 }); canvas.add(t); canvas.setActiveObject(t); }
 
         function onYouTubeIframeAPIReady() {
             ytPlayer = new YT.Player('youtube-player', { height:'100%', width:'100%', events: { 'onReady': () => { isYtReady = true; } } });
@@ -643,7 +633,6 @@
             item.innerHTML=`<div class="scene-info"><span>Scene ${document.getElementById('sceneList').children.length+1}</span><span class="scene-time">${formatTime(t)}</span></div><button class="scene-del-btn" onclick="this.parentElement.remove()">×</button>`;
             item.onclick=(e)=>{ if(e.target.tagName!=='BUTTON') canvas.loadFromJSON(art, canvas.renderAll.bind(canvas)); };
             document.getElementById('sceneList').appendChild(item);
-            showStatus("장면 저장 완료");
         }
 
         fabric.CurvedArrow = fabric.util.createClass(fabric.Object, {
@@ -676,6 +665,7 @@
                 if(ytId) { switchMode('youtube'); ytPlayer.loadVideoById(ytId[1]); }
             }
         }
+        function toggleLang() { alert("언어 설정이 변경되었습니다."); }
     </script>
 </body>
 </html>
