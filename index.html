@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Tactical Board - v101 GitHub Database System</title>
+    <title>Tactical Board - v102 GitHub Data Sync Fix</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -248,7 +248,7 @@
 
     <script src="https://www.youtube.com/iframe_api"></script>
     <script>
-        // --- 🔗 GitHub 매치 센터 로직 ---
+        // --- 🔗 GitHub 매치 센터 및 데이터 로드 로직 (v102 개편) ---
         let githubMatches = [];
 
         function openMatchCenter() {
@@ -266,19 +266,26 @@
             container.innerHTML = '';
 
             try {
-                let finalUrl = getDirectLink(urlInput);
-                const response = await fetch(finalUrl + "?t=" + Date.now()); 
-                if (!response.ok) throw new Error();
+                const finalUrl = getDirectLink(urlInput);
+                // JSON 파일은 프록시 없이 직접 시도 (GitHub Raw는 CORS 허용)
+                let response = await fetch(finalUrl + "?t=" + Date.now()); 
+                if (!response.ok) {
+                    // 직접 fetch 실패 시 프록시 사용
+                    const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(finalUrl);
+                    response = await fetch(proxyUrl);
+                }
                 githubMatches = await response.json();
                 
                 loading.style.display = 'none';
+                if(!githubMatches.matches || !githubMatches.matches.length) throw new Error();
+
                 githubMatches.matches.forEach((match, index) => {
                     const card = document.createElement('div');
                     card.className = 'match-card';
                     card.innerHTML = `
                         <div>
                             <div class="match-title">${match.title}</div>
-                            <div class="match-meta">${match.competition || '매치'} | ${match.date || '날짜 미정'}</div>
+                            <div class="match-meta">${match.competition || '대회'} | ${match.date || '날짜 미정'}</div>
                         </div>
                         <i class="fa-solid fa-circle-play" style="color:var(--accent); font-size:1.4rem;"></i>
                     `;
@@ -308,38 +315,56 @@
             // 2. 데이터 로드 (XML/CSV)
             try {
                 const text = await fetchExternalData(match.data);
-                if (match.data.toLowerCase().endsWith('.csv')) parseDartfishCSV(text);
+                if (match.data.toLowerCase().includes('.csv')) parseDartfishCSV(text);
                 else parseSportsCodeXML(text);
                 openTab('tab-data');
                 showStatus(`${match.title} 로드 완료!`);
             } catch (err) {
                 alert("데이터 로드 실패: " + err.message);
+                showStatus("데이터 로드 실패");
             }
         }
 
         function getDirectLink(url) {
-            if (!url) return null;
-            if (url.includes("github.com") && !url.includes("raw.githubusercontent.com")) {
-                return url.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/");
+            if (!url) return "";
+            let link = url.trim();
+            // github.com 주소를 raw 주소로 변환
+            if (link.includes("github.com") && !link.includes("raw.githubusercontent.com")) {
+                link = link.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/").replace("/refs/heads/", "/");
             }
-            if (url.includes("drive.google.com")) {
-                const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
+            // 구글 드라이브 처리
+            if (link.includes("drive.google.com")) {
+                const match = link.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || link.match(/id=([a-zA-Z0-9_-]+)/);
                 if (match) return `https://docs.google.com/uc?id=${match[1]}&export=download`;
             }
-            return url;
+            return link;
         }
 
         async function fetchExternalData(url) {
             const finalUrl = getDirectLink(url);
+            console.log("Fetching from:", finalUrl);
+            
             try {
+                // 1. GitHub Raw는 직접 fetch가 가능하므로 먼저 시도 (가장 빠르고 인코딩 문제 없음)
+                const response = await fetch(finalUrl);
+                if (response.ok) {
+                    const text = await response.text();
+                    if (!text.includes("<html") && !text.trim().startsWith("<!doctype")) return text;
+                }
+                
+                // 2. 직접 fetch 실패 시 프록시 서버 사용 (단, 한글 인코딩 깨짐 방지를 위해 원본 URL 전달)
                 const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(finalUrl);
-                let response = await fetch(proxyUrl);
-                if (!response.ok) throw new Error();
-                let text = await response.text();
-                if (text.includes("<html") || text.trim().startsWith("<!doctype")) throw new Error("유효한 데이터 형식이 아닙니다.");
-                return text;
+                const proxyResponse = await fetch(proxyUrl);
+                if (!proxyResponse.ok) throw new Error();
+                
+                const proxyText = await proxyResponse.text();
+                if (proxyText.includes("<html") || proxyText.trim().startsWith("<!doctype")) {
+                    throw new Error("보안 정책으로 파일 로드가 차단되었습니다. (HTML이 반환됨)");
+                }
+                return proxyText;
             } catch (e) {
-                throw new Error("파일을 읽을 수 없습니다. (CORS/네트워크 오류)");
+                console.error("Fetch Error:", e);
+                throw new Error(e.message || "파일을 읽을 수 없습니다. (CORS 또는 네트워크 오류)");
             }
         }
 
@@ -405,6 +430,13 @@
         function parseSportsCodeXML(text) {
             const parser = new DOMParser();
             const xmlDoc = parser.parseFromString(text, "text/xml");
+            
+            if (xmlDoc.getElementsByTagName("parsererror").length > 0) {
+                console.error("XML Parse Error");
+                alert("XML 형식이 올바르지 않거나 데이터가 손상되었습니다.");
+                return;
+            }
+
             const instances = xmlDoc.getElementsByTagName("instance");
             eventList = [];
             for (let i = 0; i < instances.length; i++) {
@@ -414,6 +446,18 @@
                 const labels = inst.getElementsByTagName("label");
                 let labelText = labels.length > 0 ? labels[0].getElementsByTagName("text")[0]?.textContent || "" : "";
                 eventList.push({ start, code, label: labelText });
+            }
+            renderDataList();
+        }
+
+        function parseDartfishCSV(text) {
+            const lines = text.split("\n");
+            if(lines.length < 2) return;
+            eventList = [];
+            for(let i=1; i<lines.length; i++){
+                const cols = lines[i].split(",");
+                if(cols.length < 2) continue;
+                eventList.push({ start: parseFloat(cols[0]) || 0, code: cols[1] || "Event", label: cols[2] || "" });
             }
             renderDataList();
         }
@@ -438,7 +482,7 @@
                 items.forEach(it => {
                     const item = document.createElement('div'); item.className = 'data-item';
                     let t = it.start; if(unit === 'ms') t /= 1000; else if(unit === 'cs') t /= 100;
-                    item.innerHTML = `<span>${it.label || '-'}</span><span style="color:#e74c3c;">${formatTime(t)}</span>`;
+                    item.innerHTML = `<span>${it.label || '-'}</span><span style="color:#e74c3c;font-family:monospace;">${formatTime(t)}</span>`;
                     item.onclick = () => jumpToTime(t);
                     content.appendChild(item);
                 });
@@ -523,7 +567,7 @@
             canvas.add(curve);
         }
 
-        // --- ⚙️ 설정 기능 ---
+        // --- ⚙️ 설정 및 유틸리티 ---
         let shortcutConfig = { 'select': { label: '선택', key: 's' }, 'drawPen': { label: '펜', key: 'p' }, 'drawArrow': { label: '화살표', key: 'a' }, 'drawSpot': { label: '스팟', key: 'h' }, 'deleteObj': { label: '삭제', key: 'Delete' }, 'videoToggle': { label: '재생', key: ' ' } };
         function initShortcuts() {
             const list = document.getElementById('shortcut-list'); list.innerHTML = '';
@@ -537,7 +581,7 @@
         }
         window.addEventListener('keydown', (e) => { if (e.target.tagName === 'INPUT') return; if (e.key === shortcutConfig.select.key) setMode('select'); else if (e.key === shortcutConfig.drawPen.key) setMode('drawPen'); else if (e.key === shortcutConfig.drawArrow.key) setMode('drawArrow'); else if (e.key === shortcutConfig.drawSpot.key) setMode('drawSpot'); else if (e.key === shortcutConfig.deleteObj.key) deleteObject(); else if (e.key === shortcutConfig.videoToggle.key) { e.preventDefault(); videoControl('toggle'); } });
         
-        function startCleanRecording() { alert("추출 시작... 브라우저 캡처 권한을 허용하세요."); }
+        function startCleanRecording() { alert("추출 기능 (브라우저 캡처)이 활성화되었습니다."); }
         function saveShortcuts() { alert("저장되었습니다."); toggleHelp(); }
         function completeDrawing() { resetDrawing(); setMode('select'); }
         function deleteObject() { const active = canvas.getActiveObjects(); if(active.length) { canvas.discardActiveObject(); active.forEach(o => canvas.remove(o)); } }
@@ -561,7 +605,7 @@
         function toggleNodeMode() { isSpotMode = !isSpotMode; document.getElementById('nodeBtn').classList.toggle('active'); }
         function togglePalm() { isPalmRejection = !isPalmRejection; document.getElementById('btn-palm').classList.toggle('active'); }
         function hexToMutedRgba(h, a) { const r=parseInt(h.slice(1,3),16), g=parseInt(h.slice(3,5),16), b=parseInt(h.slice(5,7),16); return `rgba(${r},${g},${b},${a})`; }
-        function addText() { const t = new fabric.IText('Text', { left: canvas.width/2, top: canvas.height/2, fill: currentColor, fontFamily: 'S-CoreDream-6Bold', fontSize: 30 }); canvas.add(t); canvas.setActiveObject(t); }
+        function addText() { const t = new fabric.IText('텍스트', { left: canvas.width/2, top: canvas.height/2, fill: currentColor, fontFamily: 'S-CoreDream-6Bold', fontSize: 30 }); canvas.add(t); canvas.setActiveObject(t); }
 
         function onYouTubeIframeAPIReady() {
             ytPlayer = new YT.Player('youtube-player', { height:'100%', width:'100%', events: { 'onReady': () => { isYtReady = true; } } });
