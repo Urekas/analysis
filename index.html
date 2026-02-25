@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Tactical Board - v93 URL & XML Fix</title>
+    <title>Tactical Board - v95 Full Integration & Fix</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -10,7 +10,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- 🔥 Google API 및 GIS 로드 -->
     <script async defer src="https://apis.google.com/js/api.js"></script>
     <script async defer src="https://accounts.google.com/gsi/client"></script>
 
@@ -19,15 +18,16 @@
         :root { --bg-color: #1a1a1a; --panel-bg: #2d2d2d; --accent: #e74c3c; --text: #eee; --sidebar-width: 280px; }
         body { margin: 0; padding: 0; background: var(--bg-color); color: var(--text); font-family: 'S-CoreDream-6Bold', sans-serif; overflow: hidden; display: flex; height: 100vh; user-select: none; -webkit-user-select: none; }
 
-        /* 좌측 사이드바 */
         .sidebar { width: 80px; background: var(--panel-bg); display: flex; flex-direction: column; align-items: center; padding-top: 20px; box-shadow: 2px 0 10px rgba(0,0,0,0.5); z-index: 20; overflow-y: auto; flex-shrink: 0; }
         .sidebar::-webkit-scrollbar { width: 0; }
         .tool-btn { width: 50px; height: 50px; margin-bottom: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); background: transparent; color: #aaa; font-size: 1.4rem; cursor: pointer; transition: 0.2s; display: flex; justify-content: center; align-items: center; position: relative; flex-shrink: 0; }
         .tool-btn:hover { background: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.3); }
         .tool-btn.active { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 0 15px rgba(231, 76, 60, 0.4); }
+        .tool-btn::after { content: attr(data-shortcut); position: absolute; bottom: 2px; right: 4px; font-size: 0.6rem; opacity: 0.5; font-family: monospace; }
         .divider { width: 40px; height: 1px; background: #444; margin: 10px 0; flex-shrink: 0; }
+        #btn-palm.active { background: #2ecc71; border-color: #2ecc71; color: white; }
+        .finish-btn { color: #2ecc71; border-color: #2ecc71; display: none; } .finish-btn.show { display: flex; }
         
-        /* 중앙 워크스페이스 */
         .workspace { flex: 1; display: flex; flex-direction: column; background: #000; overflow: hidden; position: relative; }
         .media-container { flex: 1; position: relative; width: 100%; display: flex; justify-content: center; align-items: center; overflow: hidden; background: #000; }
         
@@ -35,76 +35,110 @@
         #local-video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; z-index: 1; object-fit: contain; }
         .canvas-wrapper { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; }
 
-        /* 스크러버 */
         .scrubber-area { height: 50px; width: 100%; background: #111; display: none; align-items: center; justify-content: center; padding: 0 20px; box-sizing: border-box; border-top: 1px solid #333; flex-shrink: 0; z-index: 10; }
         .scrubber-input { flex: 1; -webkit-appearance: none; height: 8px; background: #444; border-radius: 5px; cursor: pointer; margin: 0 15px; }
-        .scrubber-input::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; background: #e67e22; border-radius: 50%; cursor: pointer; transition: 0.1s; }
+        .scrubber-input::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; background: #e67e22; border-radius: 50%; cursor: pointer; }
         .time-display { font-family: monospace; color: #ccc; font-size: 0.9rem; min-width: 100px; text-align: center; }
 
-        /* 하단 패널 */
         .bottom-panel { height: 70px; width: 100%; background: var(--panel-bg); display: flex; justify-content: center; align-items: center; border-top: 1px solid #444; z-index: 20; flex-shrink: 0; }
         .control-bar { display: flex; gap: 15px; align-items: center; }
-        .color-dot { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.2s; }
-        .color-dot.selected { border-color: white; transform: scale(1.1); }
-        .c-white { background: #ffffff; } .c-red { background: #e63946; } .c-yellow { background: #ffbe0b; } .c-blue { background: #3a86ff; } .c-green { background: #2ecc71; } .c-black { background: #000000; }
-
-        /* 우측 사이드바 */
-        .scene-sidebar { width: var(--sidebar-width); background: #222; border-left: 1px solid #444; display: flex; flex-direction: column; padding: 0; z-index: 30; transition: width 0.3s ease; overflow: hidden; flex-shrink: 0; }
+        .color-dot { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.2s; position: relative; }
+        .color-dot.selected { border-color: white; box-shadow: 0 0 0 2px var(--bg-color); transform: scale(1.1); }
+        .c-white { background: #ffffff; } .c-red { background: #e63946; } .c-yellow { background: #ffbe0b; } .c-blue { background: #3a86ff; } .c-green { background: #2ecc71; } .c-black { background: #000000; border: 1px solid #555; }
+        .slider-group { display: flex; align-items: center; gap: 8px; color: #aaa; font-size: 0.9rem; }
+        input[type=range] { -webkit-appearance: none; width: 80px; height: 5px; background: #555; border-radius: 5px; cursor: pointer; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: var(--accent); border-radius: 50%; cursor: pointer; }
+        .toggle-btn { width: 36px; height: 36px; border-radius: 8px; border: 1px solid #555; background: #333; color: #aaa; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.2s; }
+        .toggle-btn.active { background: #3498db; color: white; border-color: #3498db; }
+        
+        #status-msg { position: absolute; top: 30px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); padding: 10px 25px; border-radius: 30px; font-size: 1rem; color: #fff; border: 1px solid rgba(255,255,255,0.2); z-index: 100; pointer-events: none; display: none; }
+        #guide-msg { position: absolute; top: 80px; left: 50%; transform: translateX(-50%); background: rgba(231, 76, 60, 0.9); color: white; padding: 10px 25px; border-radius: 30px; font-size: 1rem; font-weight: bold; pointer-events: none; display: none; z-index: 100; }
+        
+        .scene-sidebar { width: var(--sidebar-width); background: #222; border-left: 1px solid #444; display: flex; flex-direction: column; padding: 0; box-shadow: -2px 0 10px rgba(0,0,0,0.5); z-index: 30; transition: width 0.3s ease; overflow: hidden; flex-shrink: 0; }
         .scene-sidebar.closed { width: 0; }
         .sidebar-toggle-area { position: absolute; right: 0; top: 50%; transform: translateY(-50%); z-index: 40; }
         .scene-toggle-btn { width: 25px; height: 50px; background: #222; border: 1px solid #444; border-right: none; border-radius: 10px 0 0 10px; color: #aaa; cursor: pointer; display: flex; justify-content: center; align-items: center; }
         .sidebar-tabs { display: flex; border-bottom: 1px solid #444; background: #2d2d2d; }
-        .tab-btn { flex: 1; padding: 15px 0; background: none; border: none; color: #888; cursor: pointer; font-family: 'S-CoreDream-6Bold'; transition: 0.2s; }
+        .tab-btn { flex: 1; padding: 15px 0; background: none; border: none; color: #888; cursor: pointer; font-size: 0.9rem; font-family: 'S-CoreDream-6Bold'; }
         .tab-btn.active { color: var(--accent); border-bottom: 3px solid var(--accent); background: #333; }
         .tab-content { flex: 1; overflow-y: auto; display: none; padding: 15px; flex-direction: column; gap: 10px; }
         .tab-content.active { display: flex; }
         
-        /* 🔥 데이터 그룹화 스타일 */
-        .data-group { margin-bottom: 8px; }
+        /* XML 데이터 그룹 스타일 */
+        .data-group { margin-bottom: 8px; display: flex; flex-direction: column; }
         .data-group-header { background: #3a3a3a; padding: 10px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 0.95rem; font-weight: bold; color: #fff; border: 1px solid #444; }
         .group-toggle-icon { font-size: 0.8rem; color: #aaa; width: 14px; text-align: center; }
-        .group-count { background: var(--accent); color: #fff; font-size: 0.75rem; padding: 2px 8px; border-radius: 12px; margin-left: auto; font-family: monospace; }
-        .data-group-content { display: none; flex-direction: column; gap: 5px; padding-top: 5px; }
+        .group-count { background: var(--accent); color: #fff; font-size: 0.75rem; padding: 2px 8px; border-radius: 12px; margin-left: auto; }
+        .data-group-content { display: none; flex-direction: column; gap: 5px; padding-top: 5px; } /* 기본 접힘 */
         
-        .data-item { background: #2a2a2a; padding: 10px 12px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.2s; }
+        .data-item { background: #2a2a2a; padding: 10px 12px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
         .data-item:hover { background: #383838; }
+
+        .scene-item { background: #333; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .scene-info { display: flex; flex-direction: column; gap: 4px; overflow: hidden; flex: 1; cursor: pointer; }
+        .scene-title { color: #fff; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: bold; }
+        .scene-time { color: var(--accent); font-size: 0.8rem; font-family: monospace; }
+        .scene-del-btn { color: #888; background: none; border: none; cursor: pointer; }
+
+        .top-menu { position: absolute; top: 20px; right: 20px; display: flex; gap: 15px; z-index: 100; }
+        .top-btn { background: rgba(0,0,0,0.6); color: #ccc; border: 1px solid #555; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 0.9rem; }
         
-        #status-msg { position: absolute; top: 30px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); padding: 10px 25px; border-radius: 30px; font-size: 1rem; color: #fff; z-index: 100; display: none; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 999; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+        .modal-box { background: #2d2d2d; padding: 25px; border-radius: 15px; width: 90%; max-width: 550px; border: 1px solid #444; position: relative; max-height: 85vh; overflow-y: auto;}
 
         @media (max-width: 768px) {
             body { flex-direction: column; }
             .sidebar, .bottom-panel, .sidebar-toggle-area { display: none !important; }
             .workspace { height: 45vh; }
             .scene-sidebar { width: 100%; height: 55vh; }
-            .scene-sidebar.closed { height: 55vh; }
         }
     </style>
 </head>
 <body>
     <div class="sidebar">
-        <button class="tool-btn" id="btn-gdrive" style="background:#f39c12; color:white; border:none;" onclick="authAndPickDriveFile()" title="구글 드라이브"><i class="fa-brands fa-google-drive"></i></button>
+        <button class="tool-btn" id="btn-gdrive" style="background:#f39c12; color:white; border:none;" onclick="authAndPickDriveFile()"><i class="fa-brands fa-google-drive"></i></button>
         <div class="divider"></div>
         <label for="imgInput" class="tool-btn" style="background:#2ecc71; color:white; border:none;"><i class="fa-solid fa-image"></i></label>
-        <input type="file" id="imgInput" style="display:none;" accept="image/*">
+        <input type="file" id="imgInput" class="file-input" accept="image/*">
         <label for="videoInput" class="tool-btn" style="background:#3498db; color:white; border:none;"><i class="fa-solid fa-file-video"></i></label>
-        <input type="file" id="videoInput" style="display:none;" accept="video/*">
+        <input type="file" id="videoInput" class="file-input" accept="video/*">
         <label for="dataInput" class="tool-btn" style="background:#9b59b6; color:white; border:none;"><i class="fa-solid fa-file-lines"></i></label>
-        <input type="file" id="dataInput" style="display:none;" accept=".xml,.csv">
+        <input type="file" id="dataInput" class="file-input" accept=".xml,.csv">
+        <button class="tool-btn" style="background:#e63946; color:white; border:none;" onclick="loadYoutubePrompt()"><i class="fa-brands fa-youtube"></i></button>
         <div class="divider"></div>
         <button class="tool-btn" onclick="videoControl('rewind')"><i class="fa-solid fa-backward-step"></i></button>
         <button class="tool-btn" id="btn-play" onclick="videoControl('toggle')"><i class="fa-solid fa-play"></i></button>
         <button class="tool-btn" onclick="videoControl('forward')"><i class="fa-solid fa-forward-step"></i></button>
         <div class="divider"></div>
+        <button class="tool-btn" id="btn-palm" onclick="togglePalm()"><i class="fa-solid fa-hand-pointer"></i></button>
+        <div class="divider"></div>
         <button class="tool-btn active" id="btn-select" onclick="setMode('select')"><i class="fa-solid fa-arrow-pointer"></i></button>
+        <button class="tool-btn" id="btn-drawPlayerTag" onclick="setMode('drawPlayerTag')"><i class="fa-solid fa-tag"></i></button>
         <button class="tool-btn" id="btn-drawPen" onclick="setMode('drawPen')"><i class="fa-solid fa-pen"></i></button>
+        <button class="tool-btn" id="btn-addText" onclick="addText()"><i class="fa-solid fa-font"></i></button>
+        <button class="tool-btn" id="btn-drawSpot" onclick="setMode('drawSpot')"><i class="fa-regular fa-circle"></i></button>
+        <button class="tool-btn" id="btn-drawPolyline" onclick="setMode('drawPolyline')"><i class="fa-solid fa-share-nodes"></i></button>
         <button class="tool-btn" id="btn-drawArrow" onclick="setMode('drawArrow')"><i class="fa-solid fa-arrow-right-long"></i></button>
+        <button class="tool-btn" id="btn-drawCurve" onclick="setMode('drawCurve')"><i class="fa-solid fa-arrow-turn-up"></i></button>
+        <button class="tool-btn" id="btn-drawPolygon" onclick="setMode('drawPolygon')"><i class="fa-solid fa-draw-polygon"></i></button>
+        <button class="tool-btn finish-btn" id="btn-finish" onclick="completeDrawing()"><i class="fa-solid fa-check"></i></button>
+        <div class="divider"></div>
+        <button class="tool-btn" style="color:#f1c40f;" onclick="saveScene()"><i class="fa-solid fa-floppy-disk"></i></button>
+        <button class="tool-btn" id="btn-record" style="color:#e67e22;" onclick="startCleanRecording()"><i class="fa-solid fa-clapperboard"></i></button>
+        <div class="divider"></div>
+        <button class="tool-btn" id="btn-delete" style="color:#e74c3c;" onclick="deleteObject()"><i class="fa-solid fa-trash"></i></button>
+        <button class="tool-btn" style="color:#ff6b6b;" onclick="clearAll()"><i class="fa-solid fa-eraser"></i></button>
     </div>
 
     <div class="workspace">
         <div class="sidebar-toggle-area">
             <div class="scene-toggle-btn" onclick="toggleSceneSidebar()"><i class="fa-solid fa-chevron-right" id="sceneToggleIcon"></i></div>
         </div>
+        <div class="top-menu">
+            <button class="top-btn" onclick="toggleHelp()">가이드 및 설정</button>
+        </div>
         <div id="status-msg">미디어를 불러오세요.</div>
+        <div id="guide-msg">더블클릭하여 도형 완성</div>
         <div class="media-container" id="mediaContainer">
             <div id="youtube-player"></div>
             <video id="local-video" playsinline crossOrigin="anonymous"></video>
@@ -121,92 +155,83 @@
                 <div class="color-dot c-yellow" onclick="setColor('#ffbe0b', this)"></div>
                 <div class="color-dot c-blue" onclick="setColor('#3a86ff', this)"></div>
                 <div class="color-dot c-green" onclick="setColor('#2ecc71', this)"></div>
-                <div style="width:1px; height:30px; background:#555; margin: 0 10px;"></div>
-                <div class="slider-group"><i class="fa-solid fa-up-right-and-down-left-from-center"></i><input type="range" id="sizeSlider" min="5" max="50" value="20"></div>
+                <div style="width:1px; height:30px; background:#555;"></div>
+                <div id="dashBtn" class="toggle-btn" onclick="toggleDash()"><i class="fa-solid fa-ellipsis"></i></div>
+                <div class="slider-group"><i class="fa-solid fa-up-right-and-down-left-from-center"></i><input type="range" id="sizeSlider" min="10" max="100" value="40"></div>
+                <div class="slider-group"><i class="fa-solid fa-circle-half-stroke"></i><input type="range" id="opacitySlider" min="10" max="100" value="20"></div>
             </div>
         </div>
     </div>
 
     <div class="scene-sidebar" id="sceneSidebar">
         <div class="sidebar-tabs">
-            <button class="tab-btn active" onclick="openTab('tab-scenes')">장면</button>
-            <button class="tab-btn" onclick="openTab('tab-data')">데이터</button>
+            <button class="tab-btn active" onclick="openTab('tab-scenes')">저장된 장면</button>
+            <button class="tab-btn" onclick="openTab('tab-data')">데이터 분석</button>
         </div>
         <div id="tab-scenes" class="tab-content active"><div id="sceneList"></div></div>
         <div id="tab-data" class="tab-content">
+            <div class="control-box">
+                <select id="timeUnit" class="unit-select" onchange="renderDataList()">
+                    <option value="sec" selected>단위: 1초</option>
+                    <option value="ms">단위: 밀리초</option>
+                    <option value="cs">단위: 1/100초</option>
+                </select>
+                <div class="sync-control">
+                    <button class="sync-btn" onclick="adjustSync(-0.1)">-0.1s</button>
+                    <span class="sync-display" id="syncDisplay">Sync: 0.0s</span>
+                    <button class="sync-btn" onclick="adjustSync(0.1)">+0.1s</button>
+                </div>
+            </div>
             <div id="dataList"></div>
         </div>
     </div>
 
     <script src="https://www.youtube.com/iframe_api"></script>
     <script>
-        // --- 🔗 구글 드라이브 URL 자동 변환 로직 (강화형) ---
+        // --- 🔗 통합 주소 파싱 및 구글 드라이브 로직 ---
         function getDriveDirectLink(url) {
             if (!url) return null;
-            // 구글 드라이브 공유 주소 패턴 (usp=sharing, drive_link 등 모든 파라미터 대응)
-            const driveMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
-            if (driveMatch && driveMatch[1]) {
-                // 직접 다운로드 엔드포인트로 변환
-                return `https://docs.google.com/uc?id=${driveMatch[1]}&export=download`;
+            const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
+            if (match && match[1]) {
+                return `https://docs.google.com/uc?id=${match[1]}&export=download`;
             }
             return url;
         }
 
         async function fetchExternalData(url) {
-            const finalUrl = getDriveDirectLink(url);
-            showStatus("데이터 파일을 로드하는 중...");
-            
-            // 구글 드라이브 리소스는 대부분 CORS 차단이 있으므로 프록시를 기본으로 사용하되, 
-            // 원본 데이터가 HTML(경고 페이지)인지 체크하는 로직 포함
+            let finalUrl = getDriveDirectLink(url);
+            showStatus("데이터 분석 파일을 읽어오는 중...");
             try {
-                // AllOrigins 프록시를 통해 데이터 가져오기
+                // AllOrigins 프록시를 통한 CORS 우회
                 const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(finalUrl);
                 let response = await fetch(proxyUrl);
-                if (!response.ok) throw new Error();
-                
+                if (!response.ok) throw new Error("네트워크 응답 실패");
                 let text = await response.text();
-                
-                // 만약 결과물이 HTML이라면 (구글의 바이러스 경고 페이지 등)
                 if (text.trim().toLowerCase().startsWith("<!doctype html") || text.includes("<html")) {
-                    throw new Error("구글 드라이브 보안 정책에 의해 차단되었습니다. 파일을 더 작게 만들거나 직접 업로드하세요.");
+                    throw new Error("구글 보안 정책 차단. 파일 권한을 '링크가 있는 모든 사용자'로 변경하세요.");
                 }
-                
                 return text;
             } catch (e) {
-                console.error("Fetch Error:", e);
-                throw new Error(e.message || "파일 로드 실패. 공유 권한이 '링크가 있는 모든 사용자'인지 확인하세요.");
+                console.error(e);
+                throw new Error("데이터 로드 실패: " + e.message);
             }
         }
 
-        // --- 🚀 초기 실행 및 URL 파라미터 처리 ---
-        let ytPlayer, isYtReady = false, currentMediaType = 'none';
-        const localVideo = document.getElementById('local-video');
-        const canvas = new fabric.Canvas('c');
-
-        window.onYouTubeIframeAPIReady = () => {
-            ytPlayer = new YT.Player('youtube-player', {
-                height: '100%', width: '100%',
-                playerVars: { 'playsinline': 1, 'rel': 0 },
-                events: { 
-                    'onReady': () => { isYtReady = true; checkUrlParams(); },
-                    'onStateChange': (e) => {
-                        if (e.data == YT.PlayerState.PLAYING) document.getElementById('btn-play').innerHTML = '<i class="fa-solid fa-pause"></i>';
-                        else document.getElementById('btn-play').innerHTML = '<i class="fa-solid fa-play"></i>';
-                    }
-                }
-            });
-        };
-
-        async function checkUrlParams() {
-            const params = new URLSearchParams(window.location.search);
-            const videoUrl = params.get('video');
-            const dataUrl = params.get('data');
+        window.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const videoUrl = urlParams.get('video');
+            const dataUrl = urlParams.get('data');
 
             if (videoUrl) {
-                const ytId = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([^"&?\/\s]{11})/i);
-                if (ytId) {
-                    switchMode('youtube');
-                    ytPlayer.loadVideoById(ytId[1]);
+                const ytMatch = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([^"&?\/\s]{11})/i);
+                if (ytMatch && ytMatch[1]) {
+                    const checkYt = setInterval(() => {
+                        if (isYtReady && ytPlayer && ytPlayer.loadVideoById) {
+                            clearInterval(checkYt);
+                            switchMode('youtube');
+                            ytPlayer.loadVideoById(ytMatch[1]);
+                        }
+                    }, 500);
                 } else {
                     switchMode('local');
                     localVideo.src = videoUrl;
@@ -215,46 +240,21 @@
 
             if (dataUrl) {
                 try {
-                    const xmlText = await fetchExternalData(dataUrl);
-                    parseSportsCodeXML(xmlText);
+                    const content = await fetchExternalData(dataUrl);
+                    if (dataUrl.toLowerCase().endsWith('.csv')) parseDartfishCSV(content);
+                    else parseSportsCodeXML(content);
                     openTab('tab-data');
                 } catch (err) {
-                    alert("데이터 로드 오류: " + err.message);
+                    alert(err.message);
                 }
             }
-        }
+        });
 
-        // --- 📊 XML 데이터 파싱 및 그룹화 ---
-        let eventList = [];
-        function parseSportsCodeXML(text) {
-            const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(text, "text/xml");
-            
-            // XML 파싱 에러 체크
-            if (xmlDoc.getElementsByTagName("parsererror").length > 0) {
-                alert("XML 형식이 올바르지 않습니다.");
-                return;
-            }
-
-            const instances = xmlDoc.getElementsByTagName("instance");
-            eventList = [];
-            for (let i = 0; i < instances.length; i++) {
-                const start = parseFloat(instances[i].getElementsByTagName("start")[0]?.textContent || 0);
-                const code = instances[i].getElementsByTagName("code")[0]?.textContent || "Event";
-                const labels = instances[i].getElementsByTagName("label");
-                let labelText = labels.length > 0 ? labels[0].getElementsByTagName("text")[0]?.textContent : "";
-                eventList.push({ start, code, label: labelText });
-            }
-            renderDataList();
-        }
-
+        // --- 📊 데이터 렌더링 및 그룹 접기 ---
         function renderDataList() {
-            const listEl = document.getElementById('dataList');
-            listEl.innerHTML = '';
-            if (eventList.length === 0) {
-                listEl.innerHTML = '<div style="color:#777;text-align:center;padding:20px;">표시할 데이터가 없습니다.</div>';
-                return;
-            }
+            const unit = document.getElementById('timeUnit').value;
+            const listEl = document.getElementById('dataList'); listEl.innerHTML = '';
+            if (eventList.length === 0) return;
 
             const grouped = {};
             eventList.forEach(ev => {
@@ -263,16 +263,12 @@
             });
 
             for (const [code, items] of Object.entries(grouped)) {
-                const group = document.createElement('div');
-                group.className = 'data-group';
-                
-                const header = document.createElement('div');
-                header.className = 'data-group-header';
+                const group = document.createElement('div'); group.className = 'data-group';
+                const header = document.createElement('div'); header.className = 'data-group-header';
                 header.innerHTML = `<i class="fa-solid fa-chevron-right group-toggle-icon"></i><span>${code}</span><span class="group-count">${items.length}</span>`;
                 
-                const content = document.createElement('div');
-                content.className = 'data-group-content';
-                content.style.display = 'none'; // 🔥 기본적으로 접혀있도록 설정
+                const content = document.createElement('div'); content.className = 'data-group-content';
+                content.style.display = 'none'; // 🔥 기본적으로 접기
 
                 header.onclick = () => {
                     const isHidden = content.style.display === 'none';
@@ -281,108 +277,122 @@
                 };
 
                 items.forEach(it => {
-                    const item = document.createElement('div');
-                    item.className = 'data-item';
-                    item.innerHTML = `<span>${it.label || '-'}</span><span style="color:#e74c3c;font-family:monospace;">${formatTime(it.start)}</span>`;
-                    item.onclick = () => jumpToTime(it.start);
+                    const item = document.createElement('div'); item.className = 'data-item';
+                    let time = it.start;
+                    if(unit === 'ms') time = it.start / 1000;
+                    if(unit === 'cs') time = it.start / 100;
+                    item.innerHTML = `<span>${it.label || '-'}</span><span class="scene-time">${formatTime(time)}</span>`;
+                    item.onclick = () => jumpToTime(time);
                     content.appendChild(item);
                 });
-
-                group.appendChild(header);
-                group.appendChild(content);
-                listEl.appendChild(group);
+                group.appendChild(header); group.appendChild(content); listEl.appendChild(group);
             }
         }
 
-        // --- 🛠️ 기본 유틸리티 ---
-        function formatTime(s) {
-            const m = Math.floor(s / 60);
-            const sec = Math.floor(s % 60);
-            return `${m}:${sec < 10 ? '0' + sec : sec}`;
+        // --- 🎨 드로잉 및 툴 핵심 로직 (복구됨) ---
+        let currentMode = 'select', currentColor = '#ffffff', currentSize = 40, currentOpacity = 0.2, isDashed = false, isPalmRejection = false;
+        let isDrawing = false, startPoint = null, activeObj = null, pointArray = [], activePoints = [], activeLines = [], componentArray = [];
+        const canvas = new fabric.Canvas('c', { preserveObjectStacking: true });
+        const broadcastShadow = new fabric.Shadow({ color: 'rgba(0,0,0,0.8)', blur: 8, offsetX: 2, offsetY: 2 });
+        fabric.Object.prototype.set({ transparentCorners: false, cornerColor: '#fff', cornerStrokeColor: '#000', cornerStyle: 'circle', shadow: broadcastShadow });
+
+        function setMode(mode){
+            currentMode = mode;
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('btn-'+mode)?.classList.add('active');
+            canvas.isDrawingMode = (mode === 'drawPen');
+            if(canvas.isDrawingMode) {
+                canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+                canvas.freeDrawingBrush.color = currentColor;
+                canvas.freeDrawingBrush.width = currentSize/4;
+            }
+            const guide = document.getElementById('guide-msg');
+            guide.style.display = (mode === 'drawPolyline' || mode === 'drawPolygon') ? 'block' : 'none';
         }
 
-        function jumpToTime(s) {
-            if (currentMediaType === 'youtube') ytPlayer.seekTo(s, true);
-            else if (currentMediaType === 'local') localVideo.currentTime = s;
+        function createPlayerTag(p) {
+            const fs = Math.max(16, currentSize * 0.7);
+            const isR = (p.x > canvas.width / 2);
+            const dir = isR ? -1 : 1;
+            const text = new fabric.IText('PLAYER', { fontSize: fs, fill: currentColor, fontFamily: 'S-CoreDream-6Bold', originX: isR ? 'right' : 'left', originY: 'bottom', top: 4 });
+            const uw = text.width + 5;
+            const line = new fabric.Path([['M', -dir * 18, 28], ['L', 0, 0], ['L', dir * uw, 0]], { fill: '', stroke: currentColor, strokeWidth: 3, selectable: false });
+            const tag = new fabric.Group([line, text], { left: p.x, top: p.y, originX: isR ? 'right' : 'left', originY: 'top', isPlayerTag: true, side: isR ? 'R' : 'L' });
+            canvas.add(tag); setMode('select');
         }
+
+        canvas.on('mouse:down', function(o) {
+            if (isPalmRejection && o.e.pointerType === 'touch') return;
+            if(currentMode === 'select' || currentMode === 'drawPen') return;
+            const p = canvas.getPointer(o.e);
+            if(currentMode === 'drawPlayerTag') { createPlayerTag(p); return; }
+            if(currentMode === 'drawSpot') {
+                canvas.add(new fabric.Ellipse({ left: p.x, top: p.y, rx: currentSize, ry: currentSize*0.4, fill: hexToMutedRgba(currentColor, currentOpacity), stroke: currentColor, strokeWidth: 2, originX: 'center', originY: 'center' }));
+            }
+            else if(currentMode === 'drawArrow' || currentMode === 'drawCurve') {
+                isDrawing = true; startPoint = p;
+                activeObj = new fabric.Line([p.x, p.y, p.x, p.y], { stroke: currentColor, strokeWidth: 2, strokeDashArray: [5,5] });
+                canvas.add(activeObj);
+            }
+        });
+
+        canvas.on('mouse:move', o => { if(isDrawing) { const p = canvas.getPointer(o.e); activeObj.set({ x2: p.x, y2: p.y }); canvas.renderAll(); }});
+        canvas.on('mouse:up', o => {
+            if(isDrawing) {
+                isDrawing = false; const p = canvas.getPointer(o.e); canvas.remove(activeObj);
+                if(currentMode === 'drawArrow') createArrow(startPoint, p);
+                setMode('select');
+            }
+        });
+
+        function createArrow(s, e) {
+            const h = currentSize, a = Math.atan2(e.y - s.y, e.x - s.x) * 180 / Math.PI;
+            const l = Math.sqrt(Math.pow(e.x - s.x, 2) + Math.pow(e.y - s.y, 2));
+            const line = new fabric.Path(`M ${-l/2} 0 L ${l/2 - h} 0`, { stroke: currentColor, strokeWidth: 4, fill: '' });
+            const head = new fabric.Triangle({ width: h, height: h, fill: currentColor, angle: 90, left: l/2, top: 0, originX: 'center', originY: 'center' });
+            canvas.add(new fabric.Group([line, head], { left: (s.x+e.x)/2, top: (s.y+e.y)/2, angle: a, originX: 'center', originY: 'center' }));
+        }
+
+        // --- 🛠️ 유틸리티 및 기타 기능 ---
+        let ytPlayer, isYtReady = false, currentMediaType = 'none', eventList = [];
+        const localVideo = document.getElementById('local-video');
+        const playBtn = document.getElementById('btn-play');
 
         function videoControl(action) {
-            if (currentMediaType === 'youtube') {
-                if (action === 'toggle') {
-                    const state = ytPlayer.getPlayerState();
-                    if (state == 1) ytPlayer.pauseVideo(); else ytPlayer.playVideo();
-                } else if (action === 'rewind') ytPlayer.seekTo(ytPlayer.getCurrentTime() - 5, true);
-                else if (action === 'forward') ytPlayer.seekTo(ytPlayer.getCurrentTime() + 5, true);
+            if (currentMediaType === 'youtube' && isYtReady) {
+                if (action === 'toggle') ytPlayer.getPlayerState() === 1 ? ytPlayer.pauseVideo() : ytPlayer.playVideo();
+                else ytPlayer.seekTo(ytPlayer.getCurrentTime() + (action === 'forward' ? 5 : -5), true);
             } else if (currentMediaType === 'local') {
-                if (action === 'toggle') {
-                    if (localVideo.paused) localVideo.play(); else localVideo.pause();
-                } else if (action === 'rewind') localVideo.currentTime -= 5;
-                else if (action === 'forward') localVideo.currentTime += 5;
+                if (action === 'toggle') localVideo.paused ? localVideo.play() : localVideo.pause();
+                else localVideo.currentTime += (action === 'forward' ? 5 : -5);
             }
         }
 
-        function switchMode(m) {
-            currentMediaType = m;
-            document.getElementById('youtube-player').style.display = m === 'youtube' ? 'block' : 'none';
-            localVideo.style.display = m === 'local' ? 'block' : 'none';
-            document.getElementById('videoScrubber').style.display = (m !== 'none') ? 'flex' : 'none';
+        function switchMode(mode) {
+            currentMediaType = mode;
+            document.getElementById('youtube-player').style.display = (mode === 'youtube') ? 'block' : 'none';
+            localVideo.style.display = (mode === 'local') ? 'block' : 'none';
+            document.getElementById('videoScrubber').style.display = (mode !== 'none') ? 'flex' : 'none';
             resizeCanvas();
         }
 
         function resizeCanvas() {
             const cont = document.getElementById('mediaContainer');
-            canvas.setWidth(cont.offsetWidth);
-            canvas.setHeight(cont.offsetHeight);
-            canvas.renderAll();
-        }
-        window.onresize = resizeCanvas;
-
-        function toggleSceneSidebar() {
-            const sb = document.getElementById('sceneSidebar');
-            sb.classList.toggle('closed');
-            document.getElementById('sceneToggleIcon').className = sb.classList.contains('closed') ? 'fa-solid fa-chevron-left' : 'fa-solid fa-chevron-right';
-            setTimeout(resizeCanvas, 350);
+            canvas.setWidth(cont.offsetWidth); canvas.setHeight(cont.offsetHeight);
         }
 
-        function openTab(id) {
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-            // 탭 버튼 활성화 로직 추가
-            const targetBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => 
-                (id === 'tab-scenes' && b.innerText === '장면') || (id === 'tab-data' && b.innerText === '데이터')
-            );
-            if (targetBtn) targetBtn.classList.add('active');
-        }
-
-        function setMode(m) {
-            canvas.isDrawingMode = (m === 'drawPen');
-            if (canvas.isDrawingMode) {
-                canvas.freeDrawingBrush.width = document.getElementById('sizeSlider').value / 4;
-                canvas.freeDrawingBrush.color = currentColor;
-            }
-            document.querySelectorAll('.sidebar .tool-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('btn-' + m)?.classList.add('active');
-        }
-
-        let currentColor = '#ffffff';
-        function setColor(hex, el) {
-            currentColor = hex;
-            document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected'));
-            el.classList.add('selected');
-            if (canvas.isDrawingMode) canvas.freeDrawingBrush.color = hex;
-        }
-
-        function showStatus(m) {
-            const el = document.getElementById('status-msg');
-            el.innerText = m; el.style.display = 'block';
-            setTimeout(() => el.style.display = 'none', 3000);
-        }
-
-        // 초기화
-        document.getElementById('sizeSlider').oninput = function() {
-            if (canvas.isDrawingMode) canvas.freeDrawingBrush.width = this.value / 4;
+        window.onYouTubeIframeAPIReady = () => {
+            ytPlayer = new YT.Player('youtube-player', { height: '100%', width: '100%', events: { 'onReady': () => isYtReady = true } });
         };
+
+        function formatTime(s) { const m = Math.floor(s/60); const sec = Math.floor(s%60); return `${m}:${sec < 10 ? '0'+sec : sec}`; }
+        function jumpToTime(s) { if(currentMediaType === 'youtube') ytPlayer.seekTo(s, true); else localVideo.currentTime = s; }
+        function togglePalm() { isPalmRejection = !isPalmRejection; document.getElementById('btn-palm').classList.toggle('active'); }
+        function hexToMutedRgba(h, a) { return `rgba(${parseInt(h.slice(1,3),16)},${parseInt(h.slice(3,5),16)},${parseInt(h.slice(5,7),16)},${a})`; }
+        function showStatus(m) { const el = document.getElementById('status-msg'); el.innerText = m; el.style.display = 'block'; setTimeout(() => el.style.display = 'none', 3000); }
+        function toggleSceneSidebar() { document.getElementById('sceneSidebar').classList.toggle('closed'); setTimeout(resizeCanvas, 350); }
+        function openTab(id) { document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.getElementById(id).classList.add('active'); event.currentTarget?.classList.add('active'); }
+        function setColor(hex, el) { currentColor = hex; document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected')); el.classList.add('selected'); }
     </script>
 </body>
 </html>
