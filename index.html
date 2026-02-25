@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Tactical Board - v92 Final URL Fix</title>
+    <title>Tactical Board - v93 URL & XML Fix</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -140,13 +140,13 @@
 
     <script src="https://www.youtube.com/iframe_api"></script>
     <script>
-        // --- 🔗 구글 드라이브 URL 자동 변환 로직 ---
+        // --- 🔗 구글 드라이브 URL 자동 변환 로직 (강화형) ---
         function getDriveDirectLink(url) {
             if (!url) return null;
-            // 공유 링크 형태에서 파일 ID 추출 (view?usp=sharing, usp=drive_link 등 모두 대응)
+            // 구글 드라이브 공유 주소 패턴 (usp=sharing, drive_link 등 모든 파라미터 대응)
             const driveMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
             if (driveMatch && driveMatch[1]) {
-                // 직통 다운로드 링크로 변환
+                // 직접 다운로드 엔드포인트로 변환
                 return `https://docs.google.com/uc?id=${driveMatch[1]}&export=download`;
             }
             return url;
@@ -156,21 +156,25 @@
             const finalUrl = getDriveDirectLink(url);
             showStatus("데이터 파일을 로드하는 중...");
             
+            // 구글 드라이브 리소스는 대부분 CORS 차단이 있으므로 프록시를 기본으로 사용하되, 
+            // 원본 데이터가 HTML(경고 페이지)인지 체크하는 로직 포함
             try {
-                // 1. 직접 fetch 시도
-                let response = await fetch(finalUrl);
+                // AllOrigins 프록시를 통해 데이터 가져오기
+                const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(finalUrl);
+                let response = await fetch(proxyUrl);
                 if (!response.ok) throw new Error();
-                return await response.text();
-            } catch (e) {
-                // 2. CORS 프록시 우회
-                try {
-                    const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(finalUrl);
-                    let response = await fetch(proxyUrl);
-                    if (!response.ok) throw new Error();
-                    return await response.text();
-                } catch (e2) {
-                    throw new Error("파일 로드 실패. 공유 권한이 '링크가 있는 모든 사용자'인지 확인하세요.");
+                
+                let text = await response.text();
+                
+                // 만약 결과물이 HTML이라면 (구글의 바이러스 경고 페이지 등)
+                if (text.trim().toLowerCase().startsWith("<!doctype html") || text.includes("<html")) {
+                    throw new Error("구글 드라이브 보안 정책에 의해 차단되었습니다. 파일을 더 작게 만들거나 직접 업로드하세요.");
                 }
+                
+                return text;
+            } catch (e) {
+                console.error("Fetch Error:", e);
+                throw new Error(e.message || "파일 로드 실패. 공유 권한이 '링크가 있는 모든 사용자'인지 확인하세요.");
             }
         }
 
@@ -183,7 +187,13 @@
             ytPlayer = new YT.Player('youtube-player', {
                 height: '100%', width: '100%',
                 playerVars: { 'playsinline': 1, 'rel': 0 },
-                events: { 'onReady': () => { isYtReady = true; checkUrlParams(); } }
+                events: { 
+                    'onReady': () => { isYtReady = true; checkUrlParams(); },
+                    'onStateChange': (e) => {
+                        if (e.data == YT.PlayerState.PLAYING) document.getElementById('btn-play').innerHTML = '<i class="fa-solid fa-pause"></i>';
+                        else document.getElementById('btn-play').innerHTML = '<i class="fa-solid fa-play"></i>';
+                    }
+                }
             });
         };
 
@@ -209,16 +219,23 @@
                     parseSportsCodeXML(xmlText);
                     openTab('tab-data');
                 } catch (err) {
-                    alert(err.message);
+                    alert("데이터 로드 오류: " + err.message);
                 }
             }
         }
 
-        // --- 📊 XML 데이터 파싱 및 그룹화 (접기 기능 포함) ---
+        // --- 📊 XML 데이터 파싱 및 그룹화 ---
         let eventList = [];
         function parseSportsCodeXML(text) {
             const parser = new DOMParser();
             const xmlDoc = parser.parseFromString(text, "text/xml");
+            
+            // XML 파싱 에러 체크
+            if (xmlDoc.getElementsByTagName("parsererror").length > 0) {
+                alert("XML 형식이 올바르지 않습니다.");
+                return;
+            }
+
             const instances = xmlDoc.getElementsByTagName("instance");
             eventList = [];
             for (let i = 0; i < instances.length; i++) {
@@ -234,6 +251,11 @@
         function renderDataList() {
             const listEl = document.getElementById('dataList');
             listEl.innerHTML = '';
+            if (eventList.length === 0) {
+                listEl.innerHTML = '<div style="color:#777;text-align:center;padding:20px;">표시할 데이터가 없습니다.</div>';
+                return;
+            }
+
             const grouped = {};
             eventList.forEach(ev => {
                 if (!grouped[ev.code]) grouped[ev.code] = [];
@@ -250,8 +272,7 @@
                 
                 const content = document.createElement('div');
                 content.className = 'data-group-content';
-                // 🔥 초기 상태는 접혀있음
-                content.style.display = 'none';
+                content.style.display = 'none'; // 🔥 기본적으로 접혀있도록 설정
 
                 header.onclick = () => {
                     const isHidden = content.style.display === 'none';
@@ -263,10 +284,7 @@
                     const item = document.createElement('div');
                     item.className = 'data-item';
                     item.innerHTML = `<span>${it.label || '-'}</span><span style="color:#e74c3c;font-family:monospace;">${formatTime(it.start)}</span>`;
-                    item.onclick = () => {
-                        if (currentMediaType === 'youtube') ytPlayer.seekTo(it.start, true);
-                        else if (currentMediaType === 'local') localVideo.currentTime = it.start;
-                    };
+                    item.onclick = () => jumpToTime(it.start);
                     content.appendChild(item);
                 });
 
@@ -283,6 +301,26 @@
             return `${m}:${sec < 10 ? '0' + sec : sec}`;
         }
 
+        function jumpToTime(s) {
+            if (currentMediaType === 'youtube') ytPlayer.seekTo(s, true);
+            else if (currentMediaType === 'local') localVideo.currentTime = s;
+        }
+
+        function videoControl(action) {
+            if (currentMediaType === 'youtube') {
+                if (action === 'toggle') {
+                    const state = ytPlayer.getPlayerState();
+                    if (state == 1) ytPlayer.pauseVideo(); else ytPlayer.playVideo();
+                } else if (action === 'rewind') ytPlayer.seekTo(ytPlayer.getCurrentTime() - 5, true);
+                else if (action === 'forward') ytPlayer.seekTo(ytPlayer.getCurrentTime() + 5, true);
+            } else if (currentMediaType === 'local') {
+                if (action === 'toggle') {
+                    if (localVideo.paused) localVideo.play(); else localVideo.pause();
+                } else if (action === 'rewind') localVideo.currentTime -= 5;
+                else if (action === 'forward') localVideo.currentTime += 5;
+            }
+        }
+
         function switchMode(m) {
             currentMediaType = m;
             document.getElementById('youtube-player').style.display = m === 'youtube' ? 'block' : 'none';
@@ -295,7 +333,9 @@
             const cont = document.getElementById('mediaContainer');
             canvas.setWidth(cont.offsetWidth);
             canvas.setHeight(cont.offsetHeight);
+            canvas.renderAll();
         }
+        window.onresize = resizeCanvas;
 
         function toggleSceneSidebar() {
             const sb = document.getElementById('sceneSidebar');
@@ -308,7 +348,29 @@
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(id).classList.add('active');
-            event.target?.classList.add('active');
+            // 탭 버튼 활성화 로직 추가
+            const targetBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => 
+                (id === 'tab-scenes' && b.innerText === '장면') || (id === 'tab-data' && b.innerText === '데이터')
+            );
+            if (targetBtn) targetBtn.classList.add('active');
+        }
+
+        function setMode(m) {
+            canvas.isDrawingMode = (m === 'drawPen');
+            if (canvas.isDrawingMode) {
+                canvas.freeDrawingBrush.width = document.getElementById('sizeSlider').value / 4;
+                canvas.freeDrawingBrush.color = currentColor;
+            }
+            document.querySelectorAll('.sidebar .tool-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('btn-' + m)?.classList.add('active');
+        }
+
+        let currentColor = '#ffffff';
+        function setColor(hex, el) {
+            currentColor = hex;
+            document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected'));
+            el.classList.add('selected');
+            if (canvas.isDrawingMode) canvas.freeDrawingBrush.color = hex;
         }
 
         function showStatus(m) {
@@ -316,6 +378,11 @@
             el.innerText = m; el.style.display = 'block';
             setTimeout(() => el.style.display = 'none', 3000);
         }
+
+        // 초기화
+        document.getElementById('sizeSlider').oninput = function() {
+            if (canvas.isDrawingMode) canvas.freeDrawingBrush.width = this.value / 4;
+        };
     </script>
 </body>
 </html>
