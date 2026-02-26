@@ -8,10 +8,10 @@
       "data": "data/M06_IndvsJpn.xml"
     },
     {
-      "title": "테스트",
+      "title": "테스트매치",
       "competition": "2026 여자 월드컵 예선",
       "video": "https://youtu.be/Lp44oVNdT_E",
-      "data": "./data/2026 여자 월드컵 예선/테스트.xml",
+      "data": "./data/2026 여자 월드컵 예선/테스트매치_1772068785515.xml",
       "date": "2026-02-26"
     }
   ]
