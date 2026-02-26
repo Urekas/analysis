@@ -4,14 +4,14 @@
       "title": "인도 vs 일본 (M06)",
       "competition": "대회명",
       "video": "https://www.youtube.com/watch?v=FvThFJq8B0o",
-      "data": "./data/대회명/인도 vs 일본 (M06)_1772075407452.xml",
+      "data": "./data/M06_IndvsJpn.xml",
       "date": "2024-11-20"
     },
     {
       "title": "Testmatch",
       "competition": "2026 여자 월드컵 예선",
       "video": "https://youtu.be/Lp44oVNdT_E",
-      "data": "./data/대회명/인도 vs 일본 (M06)_1772075407452.xml",
+      "data": "./data/M06_IndvsJpn.xml",
       "date": "2026-02-26"
     }
   ]
