@@ -2156,12 +2156,13 @@
 
         // --- 📊 데이터 분석 파싱 ---
         function parseSportsCodeXML(rawText) {
-            // 1. BOM(U+FEFF) 제거 - iOS Safari는 BOM 있으면 parseerror 발생
-            let text = rawText;
-            if (text && text.charCodeAt(0) === 0xFEFF) {
-                text = text.slice(1);
+            let text = rawText || '';
+            // BOM 및 첫 '<' 이전의 모든 garbage 문자 제거
+            // (UTF-8 BOM, UTF-16 BOM 잘못 디코딩된 '??' 등 모두 처리)
+            const xmlStart = text.indexOf('<');
+            if (xmlStart > 0) {
+                text = text.substring(xmlStart);
             }
-            // 2. 앞뒤 공백 정리
             text = text.trim();
 
             const parser = new DOMParser();
