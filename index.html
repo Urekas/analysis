@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Tactical Board - v114 Master Integration</title>
+    <title>Tactical Board - v116 Final Stability Fix</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -26,21 +26,19 @@
         .tool-btn.active { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 0 15px rgba(231, 76, 60, 0.4); }
         .tool-btn::after { content: attr(data-shortcut); position: absolute; bottom: 2px; right: 4px; font-size: 0.6rem; opacity: 0.5; font-family: monospace; }
         .divider { width: 40px; height: 1px; background: #444; margin: 10px 0; flex-shrink: 0; }
-        #btn-video-touch.active { background: #3498db; border-color: #3498db; color: white; }
-        .finish-btn { color: #2ecc71; border-color: #2ecc71; display: none; } .finish-btn.show { display: flex; }
         
         /* 중앙 워크스페이스 */
         .workspace { flex: 1; display: flex; flex-direction: column; background: #000; overflow: hidden; position: relative; }
         .media-container { flex: 1; position: relative; width: 100%; display: flex; justify-content: center; align-items: center; overflow: hidden; background: #000; }
         
-        #youtube-player { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; z-index: 1; pointer-events: none; } /* 기본 클릭 방지 */
+        #youtube-player { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; z-index: 1; pointer-events: none; }
         #local-video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; z-index: 1; object-fit: contain; }
         .canvas-wrapper { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; }
 
         /* 스크러버 */
         .scrubber-area { height: 50px; width: 100%; background: #111; display: none; align-items: center; justify-content: center; padding: 0 20px; box-sizing: border-box; border-top: 1px solid #333; z-index: 10; }
         .scrubber-input { flex: 1; -webkit-appearance: none; height: 8px; background: #444; border-radius: 5px; cursor: pointer; margin: 0 15px; }
-        .scrubber-input::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; background: #e67e22; border-radius: 50%; cursor: pointer; }
+        .scrubber-input::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; background: #e67e22; border-radius: 50%; cursor: pointer; transition: 0.1s; }
         .time-display { font-family: monospace; color: #ccc; font-size: 0.9rem; min-width: 100px; text-align: center; }
 
         /* 하단 패널 */
@@ -83,11 +81,9 @@
         .scene-del-btn { color: #888; background: none; border: none; cursor: pointer; padding: 5px; font-size: 1.2rem; }
 
         /* 매치 센터 계층 UI */
-        .match-list { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
         .comp-card { background: #333; padding: 18px; border-radius: 10px; cursor: pointer; border: 1px solid #555; display: flex; align-items: center; gap: 15px; margin-bottom: 8px; transition: 0.2s; }
         .comp-card:hover { border-color: var(--accent); background: #3d3d3d; transform: translateX(5px); }
         .match-card { background: #2a2a2a; padding: 15px; border-radius: 8px; cursor: pointer; border-left: 4px solid var(--accent); display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; transition: 0.2s; }
-        .match-card:hover { background: #333; }
 
         .top-menu { position: absolute; top: 20px; right: 20px; display: flex; gap: 15px; z-index: 100; }
         .top-btn { background: rgba(0,0,0,0.6); color: #ccc; border: 1px solid #555; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 0.9rem; font-family: 'S-CoreDream-6Bold'; display: flex; align-items: center; gap: 8px; }
@@ -97,13 +93,11 @@
         .close-btn { position: absolute; top: 15px; right: 20px; background: none; border: none; color: #aaa; font-size: 1.8rem; cursor: pointer; }
         .modal-header { font-size: 1.5rem; margin-bottom: 15px; color: var(--accent); font-weight: bold; }
         
-        .modal-tabs { display: flex; border-bottom: 1px solid #444; margin-bottom: 15px; gap: 10px; }
-        .m-tab { padding: 8px 15px; cursor: pointer; color: #888; border-bottom: 2px solid transparent; }
-        .m-tab.active { color: var(--accent); border-bottom: 2px solid var(--accent); }
-        .m-content { display: none; font-size: 0.95rem; line-height: 1.6; color: #ddd; }
-        .m-content.active { display: block; }
-        .shortcut-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #333; }
-        .shortcut-input { background: #111; color: var(--accent); border: 1px solid #555; padding: 5px 10px; border-radius: 5px; width: 120px; text-align: center; cursor: pointer; font-size: 0.9rem; }
+        .admin-form { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
+        .form-group { display: flex; flex-direction: column; gap: 5px; }
+        .form-input { background: #111; color: #fff; border: 1px solid #444; padding: 10px; border-radius: 8px; }
+        .btn-submit { background: var(--accent); color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .finish-btn { color: #2ecc71; border-color: #2ecc71; display: none; } .finish-btn.show { display: flex; }
 
         @media (max-width: 768px) {
             body { flex-direction: column; }
@@ -115,19 +109,28 @@
     </style>
 </head>
 <body>
+    <!-- 🚀 전역 변수 선언부 (스코프 오류 방지) -->
+    <script>
+        let canvas, ytPlayer, broadcastShadow;
+        let isYtReady = false, currentMediaType = 'none', eventList = [], timeOffset = 0.0;
+        let isDrawing = false, startPoint = null, activeObj = null, pointArray = [], activePoints = [], activeLines = [], componentArray = [];
+        let currentMode = 'select', currentColor = '#ffffff', currentSize = 40, currentOpacity = 0.2, isSpotMode = false, isPalmRejection = false, isDashed = false;
+        let isDraggingSlider = false, githubMatchesData = [], isVideoInteractive = false;
+    </script>
+
     <div class="sidebar">
         <!-- 깃허브 매치 센터 버튼 -->
         <button class="tool-btn" id="btn-github-center" style="background:#333; color:white; border:none;" onclick="openMatchCenter()" title="Match Center"><i class="fa-brands fa-github"></i></button>
         <div class="divider"></div>
-        <label for="imgInput" class="tool-btn" style="background:#2ecc71; color:white; border:none;" title="사진"><i class="fa-solid fa-image"></i></label>
+        <label for="imgInput" class="tool-btn" style="background:#2ecc71; color:white; border:none;" title="사진 열기"><i class="fa-solid fa-image"></i></label>
         <input type="file" id="imgInput" style="display:none;" accept="image/*">
-        <label for="videoInput" class="tool-btn" style="background:#3498db; color:white; border:none;" title="영상"><i class="fa-solid fa-file-video"></i></label>
+        <label for="videoInput" class="tool-btn" style="background:#3498db; color:white; border:none;" title="파일 영상 열기"><i class="fa-solid fa-file-video"></i></label>
         <input type="file" id="videoInput" style="display:none;" accept="video/*">
-        <label for="dataInput" class="tool-btn" style="background:#9b59b6; color:white; border:none;" title="데이터"><i class="fa-solid fa-file-lines"></i></label>
+        <label for="dataInput" class="tool-btn" style="background:#9b59b6; color:white; border:none;" title="데이터 열기"><i class="fa-solid fa-file-lines"></i></label>
         <input type="file" id="dataInput" style="display:none;" accept=".xml,.csv">
-        <button class="tool-btn" style="background:#e63946; color:white; border:none;" onclick="loadYoutubePrompt()" title="유튜브"><i class="fa-brands fa-youtube"></i></button>
+        <button class="tool-btn" style="background:#e63946; color:white; border:none;" onclick="loadYoutubePrompt()" title="유튜브 주소"><i class="fa-brands fa-youtube"></i></button>
         <div class="divider"></div>
-        <!-- 🔥 영상 조작 모드 버튼 (유튜브 더보기 끄기용) -->
+        <!-- 영상 조작 모드 버튼 (유튜브 더보기 끄기용) -->
         <button class="tool-btn" id="btn-video-touch" onclick="toggleVideoInteraction()" title="영상 조작 모드 (유튜브 추천영상 끄기)"><i class="fa-solid fa-hand-pointer"></i></button>
         <div class="divider"></div>
         <button class="tool-btn" id="btn-rewind" onclick="videoControl('rewind')" title="-5초 (←)"><i class="fa-solid fa-backward-step"></i></button>
@@ -181,6 +184,7 @@
                     <div class="color-dot c-yellow" onclick="setColor('#ffbe0b', this)"></div>
                     <div class="color-dot c-blue" onclick="setColor('#3a86ff', this)"></div>
                     <div class="color-dot c-green" onclick="setColor('#2ecc71', this)"></div>
+                    <div class="color-dot c-black" onclick="setColor('#000000', this)"></div>
                 </div>
                 <div style="width:1px; height:30px; background:#555;"></div>
                 <div class="slider-group" title="선 두께"><i class="fa-solid fa-lines-leaning"></i><input type="range" id="sizeSlider" min="10" max="100" value="40"></div>
@@ -194,8 +198,8 @@
 
     <div class="scene-sidebar" id="sceneSidebar">
         <div class="sidebar-tabs">
-            <button class="tab-btn active" onclick="openTab('tab-scenes')">장면</button>
-            <button class="tab-btn" onclick="openTab('tab-data')">데이터</button>
+            <button class="tab-btn active" id="tab-btn-scenes" onclick="openTab('tab-scenes')">장면</button>
+            <button class="tab-btn" id="tab-btn-data" onclick="openTab('tab-data')">데이터</button>
         </div>
         <div id="tab-scenes" class="tab-content active"><div class="scene-list" id="sceneList"></div></div>
         <div id="tab-data" class="tab-content">
@@ -217,14 +221,13 @@
 
     <!-- GitHub 매치 센터 모달 -->
     <div class="modal-overlay" id="matchCenterModal">
-        <div class="modal-box" style="max-width: 600px;">
+        <div class="modal-box" style="max-width: 620px;">
             <button class="close-btn" onclick="closeMatchCenter()">&times;</button>
             <div class="modal-header">GitHub Match Center</div>
             <div class="modal-tabs">
                 <div class="m-tab active" id="m-tab-list" onclick="switchMatchTab('list')">대회 목록</div>
-                <div class="m-tab" id="m-tab-admin" onclick="switchMatchTab('admin')">매치 등록 (Admin)</div>
+                <div class="m-tab" id="m-tab-admin" onclick="switchMatchTab('admin')">매치 추가 (Admin)</div>
             </div>
-            
             <div id="match-view-list" class="m-content active">
                 <div id="list-nav" style="margin-bottom:15px; display:none;">
                     <button onclick="renderCompList()" style="background:#444; color:white; border:none; padding:8px 15px; border-radius:8px; cursor:pointer;"><i class="fa-solid fa-chevron-left"></i> 대회 목록으로</button>
@@ -236,13 +239,12 @@
                     <button onclick="loadGitHubManifest()" style="margin-top:10px; width:100%; padding:10px; background:var(--accent); color:white; border:none; cursor:pointer; font-weight:bold; border-radius:8px;">목록 동기화</button>
                 </div>
             </div>
-
             <div id="match-view-admin" class="m-content">
                 <div class="admin-form">
                     <div class="form-group"><label>GitHub PAT</label><input type="password" id="gh-token" class="form-input" value="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"></div>
                     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                        <div class="form-group"><label>GitHub ID</label><input type="text" id="gh-owner" class="form-input" value="Urekas"></div>
-                        <div class="form-group"><label>Repository</label><input type="text" id="gh-repo" class="form-input" value="analysis"></div>
+                        <div class="form-group"><label>ID</label><input type="text" id="gh-owner" class="form-input" value="Urekas"></div>
+                        <div class="form-group"><label>Repo</label><input type="text" id="gh-repo" class="form-input" value="analysis"></div>
                     </div>
                     <div class="form-group"><label>대회 이름</label><input type="text" id="match-competition" class="form-input" placeholder="2024 아시아컵"></div>
                     <div class="form-group"><label>경기 제목</label><input type="text" id="match-title" class="form-input" placeholder="인도 vs 일본"></div>
@@ -255,7 +257,7 @@
         </div>
     </div>
 
-    <!-- 설정 모달 -->
+    <!-- 설정/단축키 모달 -->
     <div class="modal-overlay" id="helpModal">
         <div class="modal-box">
             <button class="close-btn" onclick="toggleHelp()">&times;</button>
@@ -269,88 +271,109 @@
                 <p>2. <b>단축키</b>: Space(재생/정지), ←/→(5초 이동), s(선택), p(펜), a(화살표), h(스팟)</p>
                 <p>3. <b>데이터 등록</b>: Admin 탭에서 XML을 업로드하면 목록에 자동 추가됩니다.</p>
             </div>
-            <div id="m-shortcuts" class="m-content"><div id="shortcut-list"></div><button onclick="saveShortcuts()" style="margin-top:15px; padding:10px; background:var(--accent); color:white; border:none; width:100%; cursor:pointer;">저장</button></div>
+            <div id="m-shortcuts" class="m-content"><div id="shortcut-list"></div><button onclick="saveShortcuts()" style="margin-top:15px; padding:10px; background:var(--accent); color:white; border:none; width:100%; border-radius:5px;">저장</button></div>
         </div>
     </div>
 
     <script src="https://www.youtube.com/iframe_api"></script>
     <script>
-        // --- 🚀 글로벌 변수 선언 (ReferenceError 방지) ---
-        let ytPlayer, isYtReady = false, currentMediaType = 'none', eventList = [], timeOffset = 0.0;
-        let isDrawing = false, startPoint = null, activeObj = null, pointArray = [], activePoints = [], activeLines = [], componentArray = [];
-        let currentMode = 'select', currentColor = '#ffffff', currentSize = 40, currentOpacity = 0.2, isSpotMode = false, isPalmRejection = false, isDashed = false;
-        let githubMatchesData = [];
-        let isDraggingSlider = false;
-        let isVideoInteractive = false; // 🔥 유튜브 조작 모드 상태
+        // --- 🛠️ 유틸리티 함수 ---
+        function formatTime(s) { const m = Math.floor(s/60); const sec = Math.floor(s%60); return `${m}:${sec < 10 ? '0'+sec : sec}`; }
+        function jumpToTime(s) { const t = s + timeOffset; if(currentMediaType === 'youtube' && isYtReady) ytPlayer.seekTo(t, true); else localVideo.currentTime = t; }
+        function adjustSync(v) { timeOffset += v; document.getElementById('syncDisplay').innerText = `Sync: ${timeOffset.toFixed(1)}s`; }
+        function toggleHelp() { const m = document.getElementById('helpModal'); m.style.display = m.style.display === 'flex' ? 'none' : 'flex'; }
+        function switchModalTab(t) { document.getElementById('m-guide').classList.toggle('active', t==='guide'); document.getElementById('m-shortcuts').classList.toggle('active', t==='shortcuts'); if(t==='shortcuts') initShortcuts(); }
+        function openTab(id) { document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+        function toggleSceneSidebar() { document.getElementById('sceneSidebar').classList.toggle('closed'); document.getElementById('sceneToggleIcon').className = document.getElementById('sceneSidebar').classList.contains('closed') ? 'fa-solid fa-chevron-left' : 'fa-solid fa-chevron-right'; setTimeout(resizeCanvas, 350); }
+        function setColor(hex, el) { currentColor = hex; document.querySelectorAll('.color-dot').forEach(d=>d.classList.remove('selected')); el.classList.add('selected'); if(canvas && canvas.isDrawingMode) canvas.freeDrawingBrush.color = hex; }
+        function hexToMutedRgba(h, a) { const r=parseInt(h.slice(1,3),16), g=parseInt(h.slice(3,5),16), b=parseInt(h.slice(5,7),16); return `rgba(${r},${g},${b},${a})`; }
+        function togglePalm() { isPalmRejection = !isPalmRejection; document.getElementById('btn-palm').classList.toggle('active'); }
+        function addText() { if(!canvas) return; const t = new fabric.IText('텍스트', { left: canvas.width/2, top: canvas.height/2, fill: currentColor, fontFamily: 'S-CoreDream-6Bold', fontSize: 30 }); canvas.add(t); canvas.setActiveObject(t); }
+        function deleteObject() { if(!canvas) return; const active = canvas.getActiveObjects(); if(active.length) { canvas.discardActiveObject(); active.forEach(o => canvas.remove(o)); } }
+        function clearAll() { if(!canvas) return; if(confirm("모두 삭제할까요?")) canvas.clear(); }
+        function resetDrawing() { pointArray=[]; activePoints=[]; activeLines=[]; componentArray=[]; isDrawing=false; document.getElementById('btn-finish').classList.remove('show'); }
+        function showStatus(m, rec=false) { const el = document.getElementById('status-msg'); el.innerText = m; el.style.display = 'block'; if(!rec) setTimeout(()=>el.style.display='none', 3000); }
+        function toggleLang() { }
+        function saveShortcuts() { alert("저장되었습니다."); toggleHelp(); }
+        function startCleanRecording() { alert("추출 시작... 브라우저 탭 캡처 권한을 허용해 주세요."); }
 
-        const localVideo = document.getElementById('local-video');
-        const canvas = new fabric.Canvas('c', { preserveObjectStacking: true });
-        const timeSlider = document.getElementById('timeSlider');
-        const timeDisplay = document.getElementById('timeDisplay');
-        const speedSlider = document.getElementById('speedSlider');
-        const broadcastShadow = new fabric.Shadow({ color: 'rgba(0,0,0,0.8)', blur: 8, offsetX: 2, offsetY: 2 });
+        // --- 🎥 미디어 제어 ---
+        function onYouTubeIframeAPIReady() { ytPlayer = new YT.Player('youtube-player', { height:'100%', width:'100%', playerVars:{'rel':0, 'controls':0, 'disablekb':1}, events: { 'onReady': () => { isYtReady = true; } } }); }
+        
+        function switchMode(m) {
+            currentMediaType = m;
+            document.getElementById('youtube-player').style.display = (m === 'youtube' ? 'block' : 'none');
+            localVideo.style.display = (m === 'local' ? 'block' : 'none');
+            document.getElementById('videoScrubber').style.display = (m !== 'none' && m !== 'image' ? 'flex' : 'none');
+            if(m !== 'local') localVideo.pause();
+            setTimeout(resizeCanvas, 200);
+        }
 
-        // --- 🎥 유튜브 조작 모드 토글 (더보기 끄기용) ---
-        function toggleVideoInteraction() {
-            isVideoInteractive = !isVideoInteractive;
-            const yt = document.getElementById('youtube-player');
-            const cw = document.getElementById('canvasWrapper');
-            const btn = document.getElementById('btn-video-touch');
+        function resizeCanvas() {
+            const cont = document.getElementById('mediaContainer');
+            if(cont && cont.offsetWidth > 0 && canvas) {
+                canvas.setDimensions({width: cont.offsetWidth, height: cont.offsetHeight});
+                canvas.renderAll();
+            }
+        }
+        window.onresize = resizeCanvas;
 
-            if (isVideoInteractive) {
-                yt.style.pointerEvents = 'auto'; // 유튜브 iframe 클릭 가능하게
-                cw.style.pointerEvents = 'none'; // 캔버스 클릭 막기
-                btn.classList.add('active');
-                showStatus("영상 직접 조작 모드 (X 버튼 클릭 가능)");
-            } else {
-                yt.style.pointerEvents = 'none'; // 유튜브 iframe 클릭 방지
-                cw.style.pointerEvents = 'auto'; // 캔버스 클릭 가능하게
-                btn.classList.remove('active');
-                showStatus("드로잉 모드로 복귀");
+        function videoControl(act) {
+            if(currentMediaType === 'local') {
+                if(act === 'toggle') localVideo.paused ? localVideo.play() : localVideo.pause();
+                else if(act==='rewind') localVideo.currentTime -= 5;
+                else if(act==='forward') localVideo.currentTime += 5;
+            } else if(currentMediaType === 'youtube' && isYtReady) {
+                if(act === 'toggle') ytPlayer.getPlayerState() === 1 ? ytPlayer.pauseVideo() : ytPlayer.playVideo();
+                else if(act==='rewind') ytPlayer.seekTo(ytPlayer.getCurrentTime() - 5, true);
+                else if(act==='forward') ytPlayer.seekTo(ytPlayer.getCurrentTime() + 5, true);
             }
         }
 
-        // --- 🎞️ 타임라인 및 재생 속도 로직 ---
-        function updateTimelineUI() {
-            if (!isDraggingSlider) {
-                let cur = 0, dur = 0;
-                if (currentMediaType === 'local' && localVideo.duration) { cur = localVideo.currentTime; dur = localVideo.duration; }
-                else if (currentMediaType === 'youtube' && isYtReady && ytPlayer && ytPlayer.getDuration) { cur = ytPlayer.getCurrentTime(); dur = ytPlayer.getDuration(); }
-                if (dur > 0) { timeSlider.value = (cur / dur) * 100; timeDisplay.innerText = `${formatTime(cur)} / ${formatTime(dur)}`; }
+        // --- 🎨 드로잉 모드 제어 ---
+        function setMode(mode){
+            if (isVideoInteractive) toggleVideoInteraction();
+            currentMode = mode;
+            document.querySelectorAll('.sidebar .tool-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('btn-'+mode)?.classList.add('active');
+            if(canvas) {
+                canvas.isDrawingMode = (mode === 'drawPen');
+                if(canvas.isDrawingMode) {
+                    canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+                    canvas.freeDrawingBrush.color = currentColor; canvas.freeDrawingBrush.width = currentSize/4;
+                }
             }
-            requestAnimationFrame(updateTimelineUI);
+            document.getElementById('guide-msg').style.display = (mode === 'drawPolyline' || mode === 'drawPolygon') ? 'block' : 'none';
+            resetDrawing();
         }
-        requestAnimationFrame(updateTimelineUI);
 
-        timeSlider.oninput = () => { isDraggingSlider = true; };
-        timeSlider.onchange = () => {
-            isDraggingSlider = false;
-            const val = timeSlider.value / 100;
-            if (currentMediaType === 'local') localVideo.currentTime = val * localVideo.duration;
-            else if (currentMediaType === 'youtube') ytPlayer.seekTo(val * ytPlayer.getDuration(), true);
-        };
+        function completeDrawing() { 
+            if(pointArray.length < 2) { resetDrawing(); return; }
+            if(currentMode === 'drawPolyline') {
+                const group = new fabric.Group([...componentArray], { selectable: true, shadow: broadcastShadow });
+                componentArray.forEach(o => canvas.remove(o)); canvas.add(group); canvas.setActiveObject(group);
+            } else if(currentMode === 'drawPolygon') {
+                const poly = new fabric.Polygon(pointArray, { fill: hexToMutedRgba(currentColor, currentOpacity), stroke: currentColor, strokeWidth: 2 });
+                activePoints.forEach(p => canvas.remove(p)); activeLines.forEach(l => canvas.remove(l)); canvas.add(poly);
+            }
+            resetDrawing(); setMode('select'); 
+        }
 
-        speedSlider.oninput = () => {
-            const rate = parseFloat(speedSlider.value);
-            document.getElementById('speedVal').innerText = rate.toFixed(1) + 'x';
-            if (currentMediaType === 'local') localVideo.playbackRate = rate;
-            else if (currentMediaType === 'youtube' && isYtReady) ytPlayer.setPlaybackRate(rate);
-        };
-
-        // --- 🔗 GitHub & Match Center Logic ---
-        function openMatchCenter() { document.getElementById('matchCenterModal').style.display = 'flex'; loadAdminConfig(); loadGitHubManifest(); }
-        function closeMatchCenter() { document.getElementById('matchCenterModal').style.display = 'none'; }
-        function switchMatchTab(t) {
-            document.getElementById('m-tab-list').className = 'm-tab' + (t==='list'?' active':'');
-            document.getElementById('m-tab-admin').className = 'm-tab' + (t==='admin'?' active':'');
-            document.getElementById('match-view-list').className = 'm-content' + (t==='list'?' active':'');
-            document.getElementById('match-view-admin').className = 'm-content' + (t==='admin'?' active':'');
+        // --- 🔗 GitHub & Match Center ---
+        function getDirectLink(url) {
+            if (!url) return ""; let l = url.trim();
+            if (l.startsWith('./') || !l.startsWith('http')) return l;
+            if (l.includes("github.com") && !l.includes("raw.githubusercontent.com")) {
+                l = l.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/");
+            }
+            return l;
         }
 
         async function loadGitHubManifest() {
             const urlInput = document.getElementById('manifest-url').value.trim();
+            const container = document.getElementById('match-list-container');
             const loading = document.getElementById('match-loading');
-            loading.style.display = 'block'; document.getElementById('match-list-container').innerHTML = ''; document.getElementById('list-nav').style.display = 'none';
+            loading.style.display = 'block'; container.innerHTML = '';
             try {
                 let finalUrl = getDirectLink(urlInput);
                 const response = await fetch(finalUrl + "?t=" + Date.now());
@@ -358,7 +381,7 @@
                 const data = await response.json();
                 githubMatchesData = data.matches;
                 renderCompList(); loading.style.display = 'none';
-            } catch (e) { loading.innerText = "목록을 불러올 수 없습니다."; }
+            } catch (e) { loading.innerText = "목록 로드 실패"; }
         }
 
         function renderCompList() {
@@ -377,12 +400,42 @@
             container.innerHTML = ''; document.getElementById('list-nav').style.display = 'block';
             githubMatchesData.filter(m => (m.competition || "기타") === comp).forEach(match => {
                 const card = document.createElement('div'); card.className = 'match-card';
-                card.innerHTML = `<span>${match.title}</span> <i class="fa-solid fa-play" style="color:var(--accent);"></i>`;
+                card.innerHTML = `<span>${match.title}</span> <i class="fa-solid fa-circle-play"></i>`;
                 card.onclick = () => selectMatch(match); container.appendChild(card);
             });
         }
 
+        async function selectMatch(match) {
+            closeMatchCenter(); showStatus(`${match.title} 로드 중...`, true);
+            const ytId = match.video.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([^"&?\/\s]{11})/i);
+            if (ytId) { switchMode('youtube'); ytPlayer.loadVideoById(ytId[1]); }
+            else { switchMode('local'); localVideo.src = match.video; localVideo.load(); }
+            try {
+                const text = await fetchExternalData(match.data);
+                parseSportsCodeXML(text); openTab('tab-data'); showStatus(`${match.title} 로드 완료!`);
+            } catch (err) { alert("데이터 로드 실패"); }
+        }
+
+        async function fetchExternalData(url) {
+            const token = document.getElementById('gh-token').value;
+            const finalUrl = getDirectLink(url);
+            const headers = {}; if (token && finalUrl.includes("raw.githubusercontent.com")) headers['Authorization'] = `token ${token}`;
+            try {
+                const response = await fetch(finalUrl, { headers });
+                if (response.ok) {
+                    const text = await response.text();
+                    if (!text.includes("<html")) return text;
+                }
+                const proxyRes = await fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(finalUrl));
+                return await proxyRes.text();
+            } catch (e) { throw new Error("로드 실패"); }
+        }
+
+        function loadAdminConfig() { const saved = localStorage.getItem('gh_admin_config'); if (saved) { const cfg = JSON.parse(saved); document.getElementById('gh-token').value = cfg.token || ""; document.getElementById('gh-owner').value = cfg.owner || ""; document.getElementById('gh-repo').value = cfg.repo || ""; } }
+        function saveAdminConfig() { const cfg = { token: document.getElementById('gh-token').value, owner: document.getElementById('gh-owner').value, repo: document.getElementById('gh-repo').value }; localStorage.setItem('gh_admin_config', JSON.stringify(cfg)); }
+
         async function uploadMatchToGitHub() {
+            saveAdminConfig();
             const token = document.getElementById('gh-token').value;
             const owner = document.getElementById('gh-owner').value;
             const repo = document.getElementById('gh-repo').value;
@@ -391,7 +444,7 @@
             const video = document.getElementById('match-video').value.trim();
             const xmlFile = document.getElementById('match-xml-file').files[0];
             const status = document.getElementById('upload-status');
-            if (!token || !owner || !repo || !comp || !title || !video || !xmlFile) { alert("모든 정보를 입력하세요."); return; }
+            if (!token || !owner || !repo || !comp || !title || !video || !xmlFile) { alert("모두 입력하세요."); return; }
             status.innerHTML = `업로드 중...`;
             try {
                 const xmlBase64 = await new Promise(res => { const r = new FileReader(); r.onload = () => res(btoa(unescape(encodeURIComponent(r.result)))); r.readAsText(xmlFile); });
@@ -402,110 +455,21 @@
                 });
                 const jsonRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/matches.json`, { headers: { 'Authorization': `token ${token}` } });
                 const jsonData = await jsonRes.json();
-                const currentObj = JSON.parse(decodeURIComponent(escape(atob(jsonData.content))));
-                currentObj.matches.push({ title, competition: comp, video, data: `./${xmlPath}`, date: new Date().toISOString().split('T')[0] });
-                const updatedJson = btoa(unescape(encodeURIComponent(JSON.stringify(currentObj, null, 2))));
+                const contentClean = jsonData.content.replace(/\s/g, "");
+                const manifestText = decodeURIComponent(escape(window.atob(contentClean)));
+                const manifestObj = JSON.parse(manifestText);
+                manifestObj.matches.push({ title, competition: comp, video, data: `./${xmlPath}`, date: new Date().toISOString().split('T')[0] });
+                const updatedJson = btoa(unescape(encodeURIComponent(JSON.stringify(manifestObj, null, 2))));
                 await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/matches.json`, {
                     method: 'PUT', headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: `Update manifest: ${title}`, content: updatedJson, sha: jsonData.sha })
+                    body: JSON.stringify({ message: `Update manifest`, content: updatedJson, sha: jsonData.sha })
                 });
                 status.innerHTML = `<span style="color:#2ecc71;">성공!</span>`;
                 setTimeout(() => { switchMatchTab('list'); loadGitHubManifest(); }, 1000);
             } catch (e) { status.innerHTML = `<span style="color:#e74c3c;">오류: ${e.message}</span>`; }
         }
 
-        async function selectMatch(match) {
-            closeMatchCenter(); showStatus(`${match.title} 로드 중...`, true);
-            const ytMatch = match.video.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([^"&?\/\s]{11})/i);
-            if (ytMatch) { switchMode('youtube'); ytPlayer.loadVideoById(ytMatch[1]); }
-            else { switchMode('local'); localVideo.src = match.video; localVideo.load(); }
-            try {
-                const text = await fetchExternalData(match.data);
-                parseSportsCodeXML(text); openTab('tab-data'); showStatus(`${match.title} 로드 완료!`);
-            } catch (err) { alert("데이터 로드 실패"); }
-        }
-
-        function getDirectLink(url) {
-            if (!url) return ""; let l = url.trim();
-            if (l.startsWith('./') || !l.startsWith('http')) return l;
-            if (l.includes("github.com") && !l.includes("raw.githubusercontent.com")) {
-                l = l.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/");
-            }
-            return l;
-        }
-
-        async function fetchExternalData(url) {
-            const token = document.getElementById('gh-token').value;
-            const finalUrl = getDirectLink(url);
-            const headers = {}; if (token && finalUrl.includes("raw.githubusercontent.com")) headers['Authorization'] = `token ${token}`;
-            try {
-                const response = await fetch(finalUrl, { headers });
-                if (response.ok) { const text = await response.text(); if (!text.includes("<html") && !text.trim().startsWith("<!doctype")) return text; }
-                const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(finalUrl);
-                const proxyRes = await fetch(proxyUrl); return await proxyRes.text();
-            } catch (e) { throw new Error("로드 실패"); }
-        }
-
-        // --- 🎨 드로잉 엔진 핵심 ---
-        fabric.Object.prototype.set({ transparentCorners: false, cornerColor: '#fff', cornerStrokeColor: '#000', cornerStyle: 'circle', shadow: broadcastShadow });
-
-        function setMode(mode){
-            if (isVideoInteractive) toggleVideoInteraction(); // 도구 선택 시 조작 모드 강제 해제
-            currentMode = mode;
-            document.querySelectorAll('.sidebar .tool-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('btn-'+mode)?.classList.add('active');
-            canvas.isDrawingMode = (mode === 'drawPen');
-            if(canvas.isDrawingMode) {
-                canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
-                canvas.freeDrawingBrush.color = currentColor; canvas.freeDrawingBrush.width = currentSize/4;
-            }
-            document.getElementById('guide-msg').style.display = (mode === 'drawPolyline' || mode === 'drawPolygon') ? 'block' : 'none';
-            resetDrawing();
-        }
-
-        canvas.on('mouse:down', function(o) {
-            if (isPalmRejection && o.e && (o.e.pointerType === 'touch' || o.e.touches)) return;
-            if(currentMode === 'select' || currentMode === 'drawPen' || !o.e) return;
-            const p = canvas.getPointer(o.e);
-            if(currentMode === 'drawPlayerTag') {
-                const fs = Math.max(16, currentSize * 0.7); const isR = (p.x > canvas.width/2); const dir = isR ? -1 : 1;
-                const text = new fabric.IText('PLAYER', { fontSize: fs, fill: currentColor, fontFamily: 'S-CoreDream-6Bold', originX: isR?'right':'left', originY: 'bottom', top: 4 });
-                const line = new fabric.Path([['M', -dir * 18, 28], ['L', 0, 0], ['L', dir * (text.width + 5), 0]], { fill: '', stroke: currentColor, strokeWidth: 3, selectable: false });
-                const tag = new fabric.Group([line, text], { left: p.x, top: p.y, originX: isR?'right':'left', originY: 'top', isPlayerTag: true, selectable: true });
-                canvas.add(tag); setMode('select');
-            } else if(currentMode === 'drawSpot') {
-                canvas.add(new fabric.Ellipse({ left: p.x, top: p.y, rx: currentSize, ry: currentSize*0.4, fill: hexToMutedRgba(currentColor, currentOpacity), stroke: currentColor, strokeWidth: 3, originX: 'center', originY: 'center', shadow: new fabric.Shadow({color:currentColor, blur:20}) }));
-            } else if(currentMode === 'drawArrow' || currentMode === 'drawCurve') {
-                isDrawing = true; startPoint = p;
-                activeObj = new fabric.Line([p.x, p.y, p.x, p.y], { stroke: currentColor, strokeWidth: 2, strokeDashArray: [5,5], selectable: false });
-                canvas.add(activeObj);
-            } else if(currentMode === 'drawPolyline' || currentMode === 'drawPolygon') {
-                const c = new fabric.Circle({radius:4, fill:currentColor, left:p.x, top:p.y, originX:'center', originY:'center', selectable:false});
-                activePoints.push(c); pointArray.push({x:p.x,y:p.y}); componentArray.push(c); canvas.add(c);
-                if(pointArray.length > 1) {
-                    const l = new fabric.Line([pointArray[pointArray.length-2].x, pointArray[pointArray.length-2].y, p.x, p.y], { stroke: currentColor, strokeWidth: 2, selectable: false });
-                    activeLines.push(l); componentArray.push(l); canvas.add(l);
-                }
-                document.getElementById('btn-finish').classList.add('show');
-            }
-        });
-
-        canvas.on('mouse:move', o => { if(isDrawing && activeObj) { const p = canvas.getPointer(o.e); activeObj.set({ x2: p.x, y2: p.y }); canvas.renderAll(); }});
-        canvas.on('mouse:up', o => {
-            if(isDrawing) {
-                isDrawing = false; const p = canvas.getPointer(o.e); canvas.remove(activeObj);
-                if(currentMode === 'drawArrow') {
-                    const h = currentSize, a = Math.atan2(p.y-startPoint.y, p.x-startPoint.x)*180/Math.PI;
-                    const l = Math.sqrt(Math.pow(p.x-startPoint.x,2)+Math.pow(p.y-startPoint.y,2));
-                    const line = new fabric.Path(`M ${-l/2} 0 L ${l/2-h+5} 0`, { stroke:currentColor, strokeWidth:4, fill:'', originX:'center', originY:'center' });
-                    const head = new fabric.Triangle({ width:h, height:h, fill:currentColor, angle:90, left:l/2, top:0, originX:'center', originY:'center' });
-                    canvas.add(new fabric.Group([line, head], { left: (startPoint.x+p.x)/2, top: (startPoint.y+p.y)/2, angle: a, originX: 'center', originY: 'center', shadow: broadcastShadow }));
-                } else createCurvedArrow(startPoint, p);
-                setMode('select');
-            }
-        });
-
-        // --- 📊 데이터 분석 ---
+        // --- 📊 데이터 분석 파싱 ---
         function parseSportsCodeXML(text) {
             const parser = new DOMParser(); const xmlDoc = parser.parseFromString(text, "text/xml");
             const instances = xmlDoc.getElementsByTagName("instance"); eventList = [];
@@ -539,14 +503,14 @@
                 items.forEach(it => {
                     const item = document.createElement('div'); item.className = 'data-item';
                     let t = it.start; if(unit === 'ms') t /= 1000;
-                    item.innerHTML = `<span>${it.label || '-'}</span><span style="color:#e74c3c;">${formatTime(t)}</span>`;
+                    item.innerHTML = `<span>${it.label || '-'}</span><span class="scene-time">${formatTime(t)}</span>`;
                     item.onclick = () => jumpToTime(t); content.appendChild(item);
                 });
                 group.appendChild(header); group.appendChild(content); listEl.appendChild(group);
             }
         }
 
-        // --- 🛠️ 설정 및 단축키 ---
+        // --- ⌨️ 단축키 시스템 ---
         let shortcutConfig = { 'select': { label: '선택', key: 's' }, 'drawPen': { label: '펜', key: 'p' }, 'drawArrow': { label: '화살표', key: 'a' }, 'drawSpot': { label: '스팟', key: 'h' }, 'deleteObj': { label: '삭제', key: 'Delete' }, 'videoToggle': { label: '재생', key: ' ' } };
         function initShortcuts() {
             const list = document.getElementById('shortcut-list'); list.innerHTML = '';
@@ -571,41 +535,8 @@
             else if (key === 'ArrowRight') { e.preventDefault(); videoControl('forward'); }
         });
 
-        function startCleanRecording() { alert("추출 기능이 활성화되었습니다. 브라우저 캡처 권한을 허용하세요."); }
-        function saveShortcuts() { alert("저장되었습니다."); toggleHelp(); }
-        function completeDrawing() { resetDrawing(); setMode('select'); }
-        function deleteObject() { const active = canvas.getActiveObjects(); if(active.length) { canvas.discardActiveObject(); active.forEach(o => canvas.remove(o)); } }
-        function clearAll() { if(confirm("모두 지울까요?")) canvas.clear(); }
-        function resetDrawing() { pointArray=[]; activePoints=[]; activeLines=[]; componentArray=[]; isDrawing=false; document.getElementById('btn-finish').classList.remove('show'); }
-        function formatTime(s) { const m = Math.floor(s/60); const sec = Math.floor(s%60); return `${m}:${sec < 10 ? '0'+sec : sec}`; }
-        function jumpToTime(s) { const t = s + timeOffset; if(currentMediaType === 'youtube') ytPlayer.seekTo(t, true); else localVideo.currentTime = t; }
-        function adjustSync(v) { timeOffset += v; document.getElementById('syncDisplay').innerText = `Sync: ${timeOffset.toFixed(1)}s`; }
-        function toggleHelp() { const m = document.getElementById('helpModal'); m.style.display = m.style.display === 'flex' ? 'none' : 'flex'; }
-        function switchModalTab(t) { document.getElementById('m-guide').classList.toggle('active', t==='guide'); document.getElementById('m-shortcuts').classList.toggle('active', t==='shortcuts'); if(t==='shortcuts') initShortcuts(); }
-        function openTab(id) { document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); document.getElementById(id).classList.add('active'); }
-        function toggleSceneSidebar() { document.getElementById('sceneSidebar').classList.toggle('closed'); document.getElementById('sceneToggleIcon').className = document.getElementById('sceneSidebar').classList.contains('closed') ? 'fa-solid fa-chevron-left' : 'fa-solid fa-chevron-right'; setTimeout(resizeCanvas, 350); }
-        function setColor(hex, el) { currentColor = hex; document.querySelectorAll('.color-dot').forEach(d=>d.classList.remove('selected')); el.classList.add('selected'); if(canvas.isDrawingMode) canvas.freeDrawingBrush.color = hex; }
-        function hexToMutedRgba(h, a) { const r=parseInt(h.slice(1,3),16), g=parseInt(h.slice(3,5),16), b=parseInt(h.slice(5,7),16); return `rgba(${r},${g},${b},${a})`; }
-        function togglePalm() { isPalmRejection = !isPalmRejection; document.getElementById('btn-palm').classList.toggle('active'); }
-        function addText() { const t = new fabric.IText('텍스트', { left: canvas.width/2, top: canvas.height/2, fill: currentColor, fontFamily: 'S-CoreDream-6Bold', fontSize: 30 }); canvas.add(t); canvas.setActiveObject(t); }
-
-        function onYouTubeIframeAPIReady() { ytPlayer = new YT.Player('youtube-player', { height:'100%', width:'100%', playerVars:{'rel':0, 'controls':0, 'disablekb':1}, events: { 'onReady': () => { isYtReady = true; } } }); }
-        function switchMode(m) {
-            currentMediaType = m;
-            document.getElementById('youtube-player').style.display = (m === 'youtube' ? 'block' : 'none');
-            localVideo.style.display = (m === 'local' ? 'block' : 'none');
-            document.getElementById('videoScrubber').style.display = (m !== 'none' && m !== 'image' ? 'flex' : 'none');
-            if(m !== 'local') localVideo.pause();
-            setTimeout(resizeCanvas, 200);
-        }
-        function resizeCanvas() { const cont = document.getElementById('mediaContainer'); if(cont && cont.offsetWidth > 0) { canvas.setDimensions({width: cont.offsetWidth, height: cont.offsetHeight}); canvas.renderAll(); } }
-        window.onresize = resizeCanvas;
-        function videoControl(act) {
-            if(currentMediaType === 'local') { if(act === 'toggle') localVideo.paused ? localVideo.play() : localVideo.pause(); else if(act==='rewind') localVideo.currentTime -= 5; else if(act==='forward') localVideo.currentTime += 5; }
-            else if(currentMediaType === 'youtube' && isYtReady) { if(act === 'toggle') ytPlayer.getPlayerState() === 1 ? ytPlayer.pauseVideo() : ytPlayer.playVideo(); else if(act==='rewind') ytPlayer.seekTo(ytPlayer.getCurrentTime() - 5, true); else if(act==='forward') ytPlayer.seekTo(ytPlayer.getCurrentTime() + 5, true); }
-        }
-        function showStatus(m, rec=false) { const el = document.getElementById('status-msg'); el.innerText = m; el.style.display = 'block'; if(!rec) setTimeout(()=>el.style.display='none', 3000); }
         function saveScene() {
+            if(!canvas) return;
             const art = JSON.stringify(canvas.toJSON());
             let t = 0; if(currentMediaType==='local') t=localVideo.currentTime; else if(isYtReady) t=ytPlayer.getCurrentTime();
             const item = document.createElement('div'); item.className='scene-item';
@@ -613,18 +544,43 @@
             item.onclick=(e)=>{ if(e.target.tagName!=='BUTTON') canvas.loadFromJSON(art, canvas.renderAll.bind(canvas)); };
             document.getElementById('sceneList').appendChild(item);
         }
-        function createCurvedArrow(s, e) { const mid = { x: (s.x+e.x)/2, y: (s.y+e.y)/2-50 }; canvas.add(new fabric.CurvedArrow(s, mid, e, { stroke: currentColor, strokeWidth: 4, headSize: currentSize })); }
-        fabric.CurvedArrow = fabric.util.createClass(fabric.Object, {
-            type: 'curvedArrow', initialize: function(p0, p1, p2, options) { this.p0 = p0; this.p1 = p1; this.p2 = p2; this.callSuper('initialize', options); this.width = Math.abs(p2.x - p0.x) || 1; this.height = Math.abs(p2.y - p0.y) || 1; },
-            _render: function(ctx) { ctx.beginPath(); ctx.moveTo(this.p0.x-this.left-this.width/2, this.p0.y-this.top-this.height/2); ctx.quadraticCurveTo(this.p1.x-this.left-this.width/2, this.p1.y-this.top-this.height/2, this.p2.x-this.left-this.width/2, this.p2.y-this.top-this.height/2); ctx.strokeStyle = this.stroke; ctx.lineWidth = this.strokeWidth; ctx.stroke(); }
+
+        // --- 🚀 앱 초기화 ---
+        window.addEventListener('DOMContentLoaded', () => {
+            if (typeof fabric !== 'undefined') {
+                broadcastShadow = new fabric.Shadow({ color: 'rgba(0,0,0,0.8)', blur: 8, offsetX: 2, offsetY: 2 });
+                canvas = new fabric.Canvas('c', { preserveObjectStacking: true });
+                fabric.Object.prototype.set({ transparentCorners: false, cornerColor: '#fff', cornerStrokeColor: '#000', cornerStyle: 'circle', shadow: broadcastShadow });
+
+                canvas.on('mouse:move', o => { if(isDrawing && activeObj) { const p = canvas.getPointer(o.e); activeObj.set({ x2: p.x, y2: p.y }); canvas.renderAll(); }});
+                canvas.on('mouse:up', o => {
+                    if(isDrawing) {
+                        isDrawing = false; const p = canvas.getPointer(o.e); canvas.remove(activeObj);
+                        if(currentMode === 'drawArrow') {
+                            const h = currentSize, a = Math.atan2(p.y-startPoint.y, p.x-startPoint.x)*180/Math.PI;
+                            const l = Math.sqrt(Math.pow(p.x-startPoint.x,2)+Math.pow(p.y-startPoint.y,2));
+                            const line = new fabric.Path(`M ${-l/2} 0 L ${l/2-h+5} 0`, { stroke:currentColor, strokeWidth:4, fill:'', originX:'center', originY:'center' });
+                            const head = new fabric.Triangle({ width:h, height:h, fill:currentColor, angle:90, left:l/2, top:0, originX:'center', originY:'center' });
+                            canvas.add(new fabric.Group([line, head], { left: (startPoint.x+p.x)/2, top: (startPoint.y+p.y)/2, angle: a, originX: 'center', originY: 'center', shadow: broadcastShadow }));
+                        } else createCurvedArrow(startPoint, p);
+                        setMode('select');
+                    }
+                });
+
+                fabric.CurvedArrow = fabric.util.createClass(fabric.Object, {
+                    type: 'curvedArrow', initialize: function(p0, p1, p2, options) { this.p0 = p0; this.p1 = p1; this.p2 = p2; this.callSuper('initialize', options); this.width = Math.abs(p2.x - p0.x) || 1; this.height = Math.abs(p2.y - p0.y) || 1; },
+                    _render: function(ctx) { ctx.beginPath(); ctx.moveTo(this.p0.x-this.left-this.width/2, this.p0.y-this.top-this.height/2); ctx.quadraticCurveTo(this.p1.x-this.left-this.width/2, this.p1.y-this.top-this.height/2, this.p2.x-this.left-this.width/2, this.p2.y-this.top-this.height/2); ctx.strokeStyle = this.stroke; ctx.lineWidth = this.strokeWidth; ctx.stroke(); }
+                });
+            }
+
+            document.getElementById('videoInput').onchange = (e) => { const file = e.target.files[0]; if(!file) return; switchMode('local'); localVideo.src = URL.createObjectURL(file); localVideo.load(); };
+            document.getElementById('dataInput').onchange = (e) => { const file = e.target.files[0]; if(!file) return; const r = new FileReader(); r.onload = (d) => { parseSportsCodeXML(d.target.result); openTab('tab-data'); }; r.readAsText(file); };
+            
+            setTimeout(resizeCanvas, 500);
+            initShortcuts();
         });
-        function loadYoutubePrompt() { let url = prompt("YouTube URL:", ""); if(url) { const ytId = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([^"&?\/\s]{11})/i); if(ytId) { switchMode('youtube'); ytPlayer.loadVideoById(ytId[1]); } } }
-        function loadAdminConfig() { const saved = localStorage.getItem('gh_admin_config'); if (saved) { const cfg = JSON.parse(saved); if(cfg.token) document.getElementById('gh-token').value = cfg.token; if(cfg.owner) document.getElementById('gh-owner').value = cfg.owner; if(cfg.repo) document.getElementById('gh-repo').value = cfg.repo; } }
-        function saveAdminConfig() { const cfg = { token: document.getElementById('gh-token').value, owner: document.getElementById('gh-owner').value, repo: document.getElementById('gh-repo').value }; localStorage.setItem('gh_admin_config', JSON.stringify(cfg)); }
-        document.getElementById('videoInput').onchange = (e) => { const file = e.target.files[0]; if(!file) return; switchMode('local'); localVideo.src = URL.createObjectURL(file); localVideo.load(); };
-        document.getElementById('dataInput').onchange = (e) => { const file = e.target.files[0]; if(!file) return; const r = new FileReader(); r.onload = (d) => { parseSportsCodeXML(d.target.result); openTab('tab-data'); }; r.readAsText(file); };
-        window.onload = () => { setTimeout(resizeCanvas, 500); updateTimelineUI(); };
-        function toggleLang() { }
+
+        function createCurvedArrow(s, e) { const mid = { x: (s.x+e.x)/2, y: (s.y+e.y)/2-50 }; canvas.add(new fabric.CurvedArrow(s, mid, e, { stroke: currentColor, strokeWidth: 4, headSize: currentSize })); }
     </script>
 </body>
 </html>
