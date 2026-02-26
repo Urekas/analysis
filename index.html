@@ -774,9 +774,17 @@
             background: #e74c3c;
         }
 
+        .mobile-only {
+            display: none;
+        }
+
         @media (max-width: 768px) {
             body {
                 flex-direction: column;
+            }
+
+            .mobile-only {
+                display: inline-block;
             }
 
             .sidebar,
@@ -800,6 +808,69 @@
                 top: 10px;
                 right: 10px;
                 gap: 5px;
+            }
+        }
+
+        @media (max-width: 950px) and (orientation: landscape) {
+            body {
+                flex-direction: row;
+                overflow: hidden;
+            }
+
+            .mobile-only {
+                display: inline-block;
+            }
+
+            .sidebar,
+            .bottom-panel {
+                display: none !important;
+            }
+
+            .workspace {
+                flex: 1;
+                height: 100vh;
+                position: relative;
+            }
+
+            /* 가로 모드에서 데이터 패널 접었다 폈다 할 수 있게 처리 */
+            .scene-sidebar {
+                width: 320px;
+                height: 100vh;
+                position: absolute;
+                right: 0;
+                top: 0;
+                transition: transform 0.3s ease;
+                z-index: 100;
+                border-left: 1px solid #333;
+            }
+
+            .scene-sidebar.closed-landscape {
+                transform: translateX(100%);
+            }
+
+            /* 패널 열고 닫는 토글 버튼 위치 조정 */
+            .sidebar-toggle-area {
+                position: absolute;
+                right: 320px;
+                top: 50%;
+                transform: translateY(-50%);
+                z-index: 101;
+                width: 25px;
+                height: 50px;
+                background: #2a2a2a;
+                border: 1px solid #444;
+                border-right: none;
+                display: flex !important;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                border-radius: 5px 0 0 5px;
+                transition: right 0.3s ease;
+            }
+
+            .scene-sidebar.closed-landscape~.sidebar-toggle-area,
+            body:has(.scene-sidebar.closed-landscape) .sidebar-toggle-area {
+                right: 0px;
             }
         }
     </style>
@@ -890,11 +961,16 @@
     </div>
 
     <div class="workspace">
-        <div class="sidebar-toggle-area">
-            <div class="scene-toggle-btn" onclick="toggleSceneSidebar()"><i class="fa-solid fa-chevron-right"
-                    id="sceneToggleIcon"></i></div>
+        <div class="sidebar-toggle-area" onclick="toggleLandscapeSidebar()">
+            <div class="scene-toggle-btn"><i class="fa-solid fa-chevron-right" id="sceneToggleIcon"></i></div>
         </div>
         <div class="top-menu">
+            <button class="top-btn mobile-only" onclick="openMatchCenter()" style="color:var(--accent);"
+                title="GitHub 매치 센터"><i class="fa-brands fa-github"></i></button>
+            <label for="videoInput" class="top-btn mobile-only" style="color:#3498db; cursor:pointer;"
+                title="로컬 영상 열기"><i class="fa-solid fa-file-video"></i></label>
+            <label for="dataInput" class="top-btn mobile-only" style="color:#9b59b6; cursor:pointer;"
+                title="데이터(XML) 열기"><i class="fa-solid fa-file-lines"></i></label>
             <button class="top-btn" onclick="toggleLang()">KR | EN</button>
             <button class="top-btn" onclick="toggleHelp()"><i class="fa-solid fa-gear"></i> 설정</button>
         </div>
@@ -1787,63 +1863,24 @@
             } catch (e) { status.innerHTML = `<span style="color:#e74c3c;">오류: ${e.message}</span>`; } finally { btn.disabled = false; }
         }
 
-        // --- 🎨 드로잉 모드 및 공통 유틸 ---
-        function setMode(mode) {
-            if (isVideoInteractive) toggleVideoInteraction();
-            currentMode = mode;
-            document.querySelectorAll('.sidebar .tool-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('btn-' + mode)?.classList.add('active');
-            if (canvas) {
-                canvas.isDrawingMode = (mode === 'drawPen');
-                if (canvas.isDrawingMode) {
-                    canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
-                    canvas.freeDrawingBrush.color = currentColor; canvas.freeDrawingBrush.width = currentSize / 4;
-                }
-            }
-            document.getElementById('guide-msg').style.display = (mode === 'drawPolyline' || mode === 'drawPolygon') ? 'block' : 'none';
-            resetDrawing();
-        }
 
-        canvas.on('mouse:down', function (o) {
-            if (isPalmRejection && o.e && (o.e.pointerType === 'touch' || o.e.touches)) return;
-            if (currentMode === 'select' || currentMode === 'drawPen' || !o.e) return;
-            const p = canvas.getPointer(o.e);
-            if (currentMode === 'drawPlayerTag') {
-                const fs = Math.max(16, currentSize * 0.7); const isR = (p.x > canvas.width / 2); const dir = isR ? -1 : 1;
-                const text = new fabric.IText('PLAYER', { fontSize: fs, fill: currentColor, fontFamily: 'S-CoreDream-6Bold', originX: isR ? 'right' : 'left', originY: 'bottom', top: 4 });
-                const line = new fabric.Path([['M', -dir * 18, 28], ['L', 0, 0], ['L', dir * (text.width + 5), 0]], { fill: '', stroke: currentColor, strokeWidth: 3, selectable: false });
-                const tag = new fabric.Group([line, text], { left: p.x, top: p.y, originX: isR ? 'right' : 'left', originY: 'top', isPlayerTag: true, selectable: true });
-                canvas.add(tag); setMode('select');
-            } else if (currentMode === 'drawSpot') {
-                canvas.add(new fabric.Ellipse({ left: p.x, top: p.y, rx: currentSize, ry: currentSize * 0.4, fill: hexToMutedRgba(currentColor, currentOpacity), stroke: currentColor, strokeWidth: 3, originX: 'center', originY: 'center', shadow: new fabric.Shadow({ color: currentColor, blur: 20 }) }));
-            } else if (currentMode === 'drawArrow' || currentMode === 'drawCurve') {
-                isDrawing = true; startPoint = p;
-                activeObj = new fabric.Line([p.x, p.y, p.x, p.y], { stroke: currentColor, strokeWidth: 2, strokeDashArray: [5, 5], selectable: false });
-                canvas.add(activeObj);
-            } else if (currentMode === 'drawPolyline' || currentMode === 'drawPolygon') {
-                const c = new fabric.Circle({ radius: 4, fill: currentColor, left: p.x, top: p.y, originX: 'center', originY: 'center', selectable: false });
-                activePoints.push(c); pointArray.push({ x: p.x, y: p.y }); componentArray.push(c); canvas.add(c);
-                if (pointArray.length > 1) {
-                    const l = new fabric.Line([pointArray[pointArray.length - 2].x, pointArray[pointArray.length - 2].y, p.x, p.y], { stroke: currentColor, strokeWidth: 2, selectable: false });
-                    activeLines.push(l); componentArray.push(l); canvas.add(l);
-                }
-                document.getElementById('btn-finish').classList.add('show');
-            }
-        });
 
-        canvas.on('mouse:move', o => { if (isDrawing && activeObj) { const p = canvas.getPointer(o.e); activeObj.set({ x2: p.x, y2: p.y }); canvas.renderAll(); } });
-        canvas.on('mouse:up', o => {
-            if (isDrawing) {
-                isDrawing = false; const p = canvas.getPointer(o.e); canvas.remove(activeObj);
-                if (currentMode === 'drawArrow') {
-                    const h = currentSize, a = Math.atan2(p.y - startPoint.y, p.x - startPoint.x) * 180 / Math.PI;
-                    const l = Math.sqrt(Math.pow(p.x - startPoint.x, 2) + Math.pow(p.y - startPoint.y, 2));
-                    const line = new fabric.Path(`M ${-l / 2} 0 L ${l / 2 - h + 5} 0`, { stroke: currentColor, strokeWidth: 4, fill: '', originX: 'center', originY: 'center' });
-                    const head = new fabric.Triangle({ width: h, height: h, fill: currentColor, angle: 90, left: l / 2, top: 0, originX: 'center', originY: 'center' });
-                    canvas.add(new fabric.Group([line, head], { left: (startPoint.x + p.x) / 2, top: (startPoint.y + p.y) / 2, angle: a, originX: 'center', originY: 'center', shadow: broadcastShadow }));
-                } else createCurvedArrow(startPoint, p);
-                setMode('select');
+        canvas.on('mouse:dblclick', e => {
+            if (e.target && e.target.isPlayerTag) {
+                const textObj = e.target.getObjects().find(o => o.type === 'i-text');
+                const lineObj = e.target.getObjects().find(o => o.type === 'path');
+                const newName = prompt("선수 이름 입력:", textObj.text);
+                if (newName) {
+                    textObj.set('text', newName);
+                    const dir = (e.target.side === 'R') ? -1 : 1;
+                    lineObj.set('path', [['M', -dir * 18, 28], ['L', 0, 0], ['L', dir * (textObj.width + 5), 0]]);
+                    canvas.renderAll();
+                }
+                return;
             }
+            if (!e.target) { if (pointArray.length > 0) { const removeCount = (activePoints.length >= 2) ? 2 : activePoints.length; for (let i = 0; i < removeCount; i++) { const pt = activePoints.pop(); if (pt) canvas.remove(pt); componentArray.pop(); pointArray.pop(); } if (activeLines.length > 0) { const ln1 = activeLines.pop(); canvas.remove(ln1); componentArray.pop(); } if (activeLines.length > 0) { const ln2 = activeLines.pop(); canvas.remove(ln2); componentArray.pop(); } completeDrawing(); } return; }
+            if (e.target.type === 'i-text') { e.target.enterEditing(); e.target.selectAll(); }
+            else if (currentMode === 'drawPolyline' || currentMode === 'drawPolygon') completeDrawing();
         });
 
         // --- 📊 데이터 분석 파싱 ---
@@ -1916,7 +1953,8 @@
         function completeDrawing() {
             if (pointArray.length < 2) { resetDrawing(); return; }
             if (currentMode === 'drawPolyline') {
-                const group = new fabric.Group([...componentArray], { selectable: true, shadow: broadcastShadow });
+                const groupItems = [...componentArray];
+                const group = new fabric.Group(groupItems, { selectable: true, shadow: broadcastShadow });
                 componentArray.forEach(o => canvas.remove(o)); canvas.add(group); canvas.setActiveObject(group);
             } else if (currentMode === 'drawPolygon') {
                 const poly = new fabric.Polygon(pointArray, { fill: hexToMutedRgba(currentColor, currentOpacity), stroke: currentColor, strokeWidth: 2 });
@@ -1935,6 +1973,14 @@
         function jumpToTime(s) { const t = s + timeOffset; if (currentMediaType === 'youtube' && isYtReady) ytPlayer.seekTo(t, true); else if (currentMediaType === 'local') localVideo.currentTime = t; }
         function adjustSync(v) { timeOffset += v; document.getElementById('syncDisplay').innerText = `Sync: ${timeOffset.toFixed(1)}s`; }
         function toggleHelp() { const m = document.getElementById('helpModal'); m.style.display = m.style.display === 'flex' ? 'none' : 'flex'; }
+
+        function createArrow(s, e) { const h = currentSize, a = Math.atan2(e.y - s.y, e.x - s.x) * 180 / Math.PI, l = Math.sqrt(Math.pow(e.x - s.x, 2) + Math.pow(e.y - s.y, 2)), mx = (s.x + e.x) / 2, my = (s.y + e.y) / 2, p = `M ${-l / 2} 0 L ${l / 2 - h + 5} 0`, letDashed = typeof isDashed !== 'undefined' ? isDashed : false, ln = new fabric.Path(p, { stroke: currentColor, strokeWidth: 4, strokeDashArray: letDashed ? [10, 5] : false, fill: '', originX: 'center', originY: 'center' }), hd = new fabric.Triangle({ width: h, height: h, fill: currentColor, angle: 90, left: l / 2, top: 0, originX: 'center', originY: 'center' }), g = new fabric.Group([ln, hd], { left: mx, top: my, angle: a, originX: 'center', originY: 'center', shadow: broadcastShadow }); canvas.add(g); }
+
+        fabric.CurvedArrow = fabric.util.createClass(fabric.Object, { type: 'curvedArrow', initialize: function (p0, p1, p2, options) { this.p0 = p0; this.p1 = p1; this.p2 = p2; options = options || {}; this.callSuper('initialize', options); this.headSize = options.headSize || 30; this.strokeWidth = options.strokeWidth || 5; this.stroke = options.stroke || '#fff'; this.strokeDashArray = options.strokeDashArray || false; this._updateBoundingBox(); this.prevLeft = this.left; this.prevTop = this.top; this.on('moving', () => { const dx = this.left - this.prevLeft; const dy = this.top - this.prevTop; this.p0.x += dx; this.p0.y += dy; this.p1.x += dx; this.p1.y += dy; this.p2.x += dx; this.p2.y += dy; this.prevLeft = this.left; this.prevTop = this.top; }); this.on('selected', () => { this.prevLeft = this.left; this.prevTop = this.top; }); }, _updateBoundingBox: function () { const minX = Math.min(this.p0.x, this.p1.x, this.p2.x); const maxX = Math.max(this.p0.x, this.p1.x, this.p2.x); const minY = Math.min(this.p0.y, this.p1.y, this.p2.y); const maxY = Math.max(this.p0.y, this.p1.y, this.p2.y); this.left = minX; this.top = minY; this.width = maxX - minX; this.height = maxY - minY; }, _render: function (ctx) { ctx.save(); ctx.beginPath(); ctx.lineWidth = this.strokeWidth; ctx.strokeStyle = this.stroke; ctx.lineCap = 'round'; if (this.strokeDashArray) ctx.setLineDash(this.strokeDashArray); const p0 = this.toLocalPoint(new fabric.Point(this.p0.x, this.p0.y), 'center', 'center'); const p1 = this.toLocalPoint(new fabric.Point(this.p1.x, this.p1.y), 'center', 'center'); const p2 = this.toLocalPoint(new fabric.Point(this.p2.x, this.p2.y), 'center', 'center'); ctx.moveTo(p0.x, p0.y); ctx.quadraticCurveTo(p1.x, p1.y, p2.x, p2.y); ctx.stroke(); ctx.setLineDash([]); let dx = p2.x - p1.x; let dy = p2.y - p1.y; if (dx === 0 && dy === 0) { dx = p1.x - p0.x; dy = p1.y - p0.y; } const angle = Math.atan2(dy, dx); ctx.translate(p2.x, p2.y); ctx.rotate(angle); ctx.beginPath(); const s = this.headSize; ctx.moveTo(0, 0); ctx.lineTo(-s, s / 2); ctx.lineTo(-s, -s / 2); ctx.closePath(); ctx.fillStyle = this.stroke; ctx.fill(); ctx.restore(); } });
+        fabric.CurvedArrow.prototype.controls = {};
+        function createControl(key, color) { return new fabric.Control({ position: { x: 0, y: 0 }, actionName: key, cursorStyle: 'pointer', actionHandler: function (eventData, transform, x, y) { const target = transform.target; target[key] = { x: x, y: y }; target._updateBoundingBox(); target.prevLeft = target.left; target.prevTop = target.top; return true; }, positionHandler: function (dim, finalMatrix, fabricObject) { const point = fabricObject[key]; return fabric.util.transformPoint(new fabric.Point(point.x, point.y), canvas.viewportTransform); }, render: function (ctx, left, top, styleOverride, fabricObject) { ctx.save(); ctx.translate(left, top); ctx.beginPath(); ctx.arc(0, 0, 6, 0, 2 * Math.PI); ctx.fillStyle = color; ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.fill(); ctx.stroke(); ctx.restore(); } }); }
+        fabric.CurvedArrow.prototype.controls.p0 = createControl('p0', '#ffffff'); fabric.CurvedArrow.prototype.controls.p1 = createControl('p1', '#3498db'); fabric.CurvedArrow.prototype.controls.p2 = createControl('p2', '#ffffff');
+
         function openTab(id) { document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.getElementById(id).classList.add('active'); }
         function toggleSceneSidebar() { document.getElementById('sceneSidebar').classList.toggle('closed'); document.getElementById('sceneToggleIcon').className = document.getElementById('sceneSidebar').classList.contains('closed') ? 'fa-solid fa-chevron-left' : 'fa-solid fa-chevron-right'; setTimeout(resizeCanvas, 350); }
         function setColor(hex, el) { currentColor = hex; document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected')); el.classList.add('selected'); if (canvas && canvas.isDrawingMode) canvas.freeDrawingBrush.color = hex; }
