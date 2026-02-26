@@ -1742,15 +1742,25 @@
                 });
                 if (!upRes.ok) { const errData = await upRes.json(); throw new Error(`XML 업로드 실패: ${errData.message}`); }
 
-                const manifestRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/matches.json`, { headers: { 'Authorization': `token ${token}` } });
+                const manifestRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/matches.json?t=${Date.now()}`, { headers: { 'Authorization': `token ${token}` } });
                 let manifestObj = { matches: [] }; let manifestSha = null;
 
                 if (manifestRes.ok) {
                     const manifestData = await manifestRes.json();
                     manifestSha = manifestData.sha;
-                    const contentClean = manifestData.content.replace(/\s/g, "");
-                    const bytes = new Uint8Array(window.atob(contentClean).split('').map(c => c.charCodeAt(0)));
-                    manifestObj = JSON.parse(new TextDecoder("utf-8").decode(bytes));
+                    try {
+                        if (manifestData.content) {
+                            const contentClean = manifestData.content.replace(/\s/g, "");
+                            const bytes = new Uint8Array(window.atob(contentClean).split('').map(c => c.charCodeAt(0)));
+                            manifestObj = JSON.parse(new TextDecoder("utf-8").decode(bytes));
+                        } else {
+                            manifestObj.matches = [...githubMatchesData];
+                        }
+                    } catch (e) {
+                        manifestObj.matches = [...githubMatchesData];
+                    }
+                } else {
+                    manifestObj.matches = [...githubMatchesData];
                 }
 
                 const existingIndex = manifestObj.matches.findIndex(m => m.title === title && m.competition === comp);
