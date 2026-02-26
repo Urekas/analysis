@@ -823,9 +823,13 @@
 
             .scene-sidebar {
                 width: 100%;
-                flex: 1;
+                flex: none;
+                height: 55vh;
                 border-left: none;
+                border-top: 2px solid #333;
                 transition: height 0.3s ease;
+                z-index: 1000;
+                overflow-y: auto;
             }
 
             .scene-sidebar.closed {
@@ -895,7 +899,7 @@
                 right: 0;
                 top: 0;
                 transition: transform 0.3s ease;
-                z-index: 100;
+                z-index: 1000;
                 border-left: 1px solid #333;
             }
 
@@ -984,7 +988,8 @@
                 class="fa-solid fa-tag"></i></button>
         <button class="tool-btn" id="btn-drawPen" onclick="setMode('drawPen')" title="펜"><i
                 class="fa-solid fa-pen"></i></button>
-        <button class="tool-btn" onclick="addText()" title="텍스트"><i class="fa-solid fa-font"></i></button>
+        <button class="tool-btn" id="btn-addText" onclick="addText()" title="텍스트"><i
+                class="fa-solid fa-font"></i></button>
         <button class="tool-btn" id="btn-drawSpot" onclick="setMode('drawSpot')" title="스팟"><i
                 class="fa-regular fa-circle"></i></button>
         <button class="tool-btn" id="btn-drawPolyline" onclick="setMode('drawPolyline')" title="다중 선"><i
@@ -1003,9 +1008,10 @@
         <button class="tool-btn" id="btn-record" style="color:#e67e22;" onclick="startCleanRecording()" title="추출"><i
                 class="fa-solid fa-clapperboard"></i></button>
         <div class="divider"></div>
-        <button class="tool-btn" id="btn-delete" style="color:#e74c3c;" onclick="deleteObject()" title="삭제"><i
-                class="fa-solid fa-trash"></i></button>
-        <button class="tool-btn" style="color:#ff6b6b;" onclick="clearAll()"><i class="fa-solid fa-eraser"></i></button>
+        <button class="tool-btn" id="btn-deleteObj" style="color:#e74c3c;" onclick="deleteObject()"
+            title="사용자 선택 지우기"><i class="fa-solid fa-trash"></i></button>
+        <button class="tool-btn" id="btn-clearAll" style="color:#ff6b6b;" onclick="clearAll()" title="전체 지우기"><i
+                class="fa-solid fa-eraser"></i></button>
     </div>
 
     <div class="workspace">
@@ -1193,15 +1199,49 @@
                 <div class="m-tab active" id="tab-btn-guide" onclick="switchModalTab('guide')">가이드</div>
                 <div class="m-tab" id="tab-btn-shortcuts" onclick="switchModalTab('shortcuts')">단축키</div>
             </div>
-            <div id="m-guide" class="m-content active">
-                <p>1. <b>매치 센터</b>: 깃허브 아이콘을 클릭하여 관리하세요.</p>
-                <p>2. <b>재생 컨트롤</b>: Space(재생/정지), ←/→(5초 이동)</p>
-                <p>3. <b>영상 조작</b>: 일시정지 후 '손가락 아이콘'을 누르면 유튜브 X 버튼을 직접 끌 수 있습니다.</p>
-                <p>4. <b>매치 관리</b>: 깃허브 아이콘 內 '목록 관리' 탭에서 기존 경기를 편집 및 삭제할 수 있습니다.</p>
+            <div id="m-guide" class="m-content active"
+                style="line-height:1.6; font-size:0.95rem; overflow-y:auto; max-height:400px; padding-right:10px;">
+                <h4 style="color:var(--accent); margin-top:0;">1. 🌐 GitHub 매치 센터 연동</h4>
+                <p style="margin-top:5px;">상단 <b><i class="fa-brands fa-github"></i> 아이콘</b>을 눌러 깃허브에서 호스팅되는 경기 목록과 데이터를
+                    불러올 수 있습니다.</p>
+                <ul style="padding-left:20px; color:#ccc;">
+                    <li><b>Admin 탭</b>에 GitHub 계정의 <b>Personal Access Token (PAT)</b>과 <b>저장소 정보(ID, Repo)</b>를 입력하면 바로
+                        경기 영상(URL)과 XML 데이터를 저장소에 등록할 수 있습니다.</li>
+                    <li>이후 언제든지 <b>대회 목록</b>에서 클릭 한 번으로 영상과 데이터 타이밍을 일치시켜 불러올 수 있습니다.</li>
+                </ul>
+                <hr style="border:0; border-top:1px solid #444; margin:15px 0;">
+                <h4 style="color:#3498db; margin-top:0;">2. 💻 로컬 파일(영상/XML) 열기</h4>
+                <p style="margin-top:5px;">로컬 컴퓨터에 있는 영상을 바로 웹에서 분석할 수 있습니다.</p>
+                <ul style="padding-left:20px; color:#ccc;">
+                    <li><b><i class="fa-solid fa-file-video"></i> 영상 열기</b> 아이콘을 눌러 PC의 mp4, webm 등의 영상을 가져옵니다.</li>
+                    <li><b><i class="fa-solid fa-file-lines"></i> 데이터 열기</b> 아이콘을 눌러 경기 분석 XML 파일을 가져오면, 화면 우측 패널에 시간별
+                        이벤트 목록이 자동 생성됩니다.</li>
+                </ul>
+                <hr style="border:0; border-top:1px solid #444; margin:15px 0;">
+                <h4 style="color:#2ecc71; margin-top:0;">3. ✏️ 캔버스 드로잉 & 분석 도구</h4>
+                <p style="margin-top:5px;">영상 위에 전술 그래픽을 바로 그릴 수 있습니다.</p>
+                <ul style="padding-left:20px; color:#ccc;">
+                    <li>하단 메뉴바에서 <b>색상, 선 굵기, 투명도</b>를 직관적으로 조절할 수 있습니다.</li>
+                    <li>다중선(Polyline)이나 다각형(Polygon)을 그릴 때는 화면을 클릭하여 점을 찍고, <b>더블클릭</b>하면 도형이 완성됩니다.</li>
+                    <li>그려놓은 드로잉을 저장하려면 좌측 패널 밑쪽의 <b>장면 저장 <i class="fa-solid fa-floppy-disk"></i></b> 버튼을 누르면 우측 '장면' 탭
+                        메뉴에 시간이 기록됩니다.</li>
+                </ul>
             </div>
-            <div id="m-shortcuts" class="m-content">
-                <div id="shortcut-list"></div><button onclick="saveShortcuts()"
-                    style="margin-top:15px; padding:10px; background:var(--accent); color:white; border:none; width:100%; border-radius:5px;">저장</button>
+            <div id="m-shortcuts" class="m-content" style="max-height:400px; overflow-y:auto; padding-right:10px;">
+                <p style="font-size:0.85rem; color:#aaa; margin-top:0;">* 각 단축키 입력칸을 누른 후, 원하시는 새로운 키보드 키를 눌러 손쉽게 매핑을 바꿀
+                    수 있습니다.</p>
+                <div id="shortcut-list"></div>
+                <div
+                    style="font-size:0.85rem; color:#aaa; margin-top:15px; padding:10px; background:#222; border-radius:8px;">
+                    <div>💡 <b>고정 단축키 (변경 불가):</b></div>
+                    <ul style="margin:5px 0; padding-left:20px;">
+                        <li><kbd>←</kbd> <kbd>→</kbd> : 영상 5초 뒤로/앞으로</li>
+                        <li><kbd>ESC</kbd> : 그리기 강제 취소</li>
+                    </ul>
+                </div>
+                <button onclick="saveShortcuts()"
+                    style="margin-top:15px; padding:10px; background:var(--accent); color:white; border:none; width:100%; border-radius:5px; cursor:pointer; font-weight:bold;">단축키
+                    저장</button>
             </div>
         </div>
     </div>
@@ -2111,7 +2151,12 @@
             if (!eventList.length) return;
             const grouped = {};
             eventList.forEach(ev => { if (!grouped[ev.code]) grouped[ev.code] = []; grouped[ev.code].push(ev); });
-            for (const [code, items] of Object.entries(grouped)) {
+
+            // 이름 가나다순(ABC) 정렬
+            const sortedKeys = Object.keys(grouped).sort((a, b) => a.localeCompare(b));
+
+            for (const code of sortedKeys) {
+                const items = grouped[code];
                 const group = document.createElement('div'); group.className = 'data-group';
                 const header = document.createElement('div'); header.className = 'data-group-header';
                 header.innerHTML = `<i class="fa-solid fa-chevron-right group-toggle-icon"></i><span>${code}</span><span class="group-count">${items.length}</span>`;
@@ -2132,17 +2177,53 @@
         }
 
         // --- 🛠️ 단축키 시스템 ---
-        let shortcutConfig = { 'select': { label: '선택', key: 's' }, 'drawPen': { label: '펜', key: 'p' }, 'drawArrow': { label: '화살표', key: 'a' }, 'drawSpot': { label: '스팟', key: 'h' }, 'deleteObj': { label: '삭제', key: 'Delete' }, 'videoToggle': { label: '재생', key: ' ' } };
+        let shortcutConfig = {
+            'select': { label: '선택 모드', key: 's', btnId: 'btn-select' },
+            'drawPen': { label: '펜/연필', key: 'p', btnId: 'btn-drawPen' },
+            'drawArrow': { label: '직선 화살표', key: 'a', btnId: 'btn-drawArrow' },
+            'drawCurve': { label: '곡선 화살표', key: 'c', btnId: 'btn-drawCurve' },
+            'drawPolyline': { label: '다중 선', key: 'l', btnId: 'btn-drawPolyline' },
+            'drawPolygon': { label: '다각형', key: 'g', btnId: 'btn-drawPolygon' },
+            'drawSpot': { label: '스팟 (하이라이트)', key: 'h', btnId: 'btn-drawSpot' },
+            'drawPlayerTag': { label: '선수 태그', key: 't', btnId: 'btn-drawPlayerTag' },
+            'addText': { label: '텍스트 삽입', key: 'x', btnId: 'btn-addText' },
+            'deleteObj': { label: '선택한 요소 삭제', key: 'Delete', btnId: 'btn-deleteObj' },
+            'clearAll': { label: '전체 드로잉 지우기', key: 'Escape', btnId: 'btn-clearAll' },
+            'videoToggle': { label: '영상 재생/정지', key: ' ', btnId: 'btn-play-scrubber' }
+        };
+
         function initShortcuts() {
-            const list = document.getElementById('shortcut-list'); if (!list) return; list.innerHTML = '';
+            const list = document.getElementById('shortcut-list'); if (list) list.innerHTML = '';
             for (const [id, cfg] of Object.entries(shortcutConfig)) {
-                const row = document.createElement('div'); row.className = 'shortcut-row';
-                row.innerHTML = `<span>${cfg.label}</span><input type="text" class="shortcut-input" value="${cfg.key === ' ' ? 'Space' : cfg.key}" readonly onclick="this.value='...'">`;
-                const input = row.querySelector('input');
-                input.onkeydown = (e) => { e.preventDefault(); cfg.key = e.key; input.value = e.key === ' ' ? 'Space' : e.key; };
-                list.appendChild(row);
+                if (list) {
+                    const row = document.createElement('div'); row.className = 'shortcut-row';
+                    row.innerHTML = `<span>${cfg.label}</span><input type="text" class="shortcut-input" value="${cfg.key === ' ' ? 'Space' : cfg.key}" readonly onclick="this.value='...'">`;
+                    const input = row.querySelector('input');
+                    input.onkeydown = (e) => { e.preventDefault(); cfg.key = e.key; input.value = e.key === ' ' ? 'Space' : e.key; updateShortcutUI(); };
+                    list.appendChild(row);
+                }
+            }
+            updateShortcutUI();
+        }
+
+        function updateShortcutUI() {
+            document.querySelectorAll('.shortcut-badge').forEach(b => b.remove());
+            for (const [id, cfg] of Object.entries(shortcutConfig)) {
+                const btn = document.getElementById(cfg.btnId);
+                if (btn) {
+                    const badge = document.createElement('div');
+                    badge.className = 'shortcut-badge';
+                    let disp = cfg.key.toUpperCase();
+                    if (disp === ' ') disp = 'SPC';
+                    if (disp === 'ESCAPE') disp = 'ESC';
+                    if (disp === 'DELETE') disp = 'DEL';
+                    if (disp === 'ARROWLEFT' || disp === 'ARROWRIGHT' || disp === 'ARROWUP' || disp === 'ARROWDOWN') disp = 'KEY';
+                    badge.innerText = disp;
+                    btn.appendChild(badge);
+                }
             }
         }
+
         window.addEventListener('keydown', (e) => {
             if (e.target.tagName === 'INPUT' && e.target.type !== 'range') return;
             if (e.target.tagName === 'TEXTAREA' || (e.target.isContentEditable && e.target.tagName !== 'BODY')) return;
@@ -2150,8 +2231,14 @@
             if (key === shortcutConfig.select.key) setMode('select');
             else if (key === shortcutConfig.drawPen.key) setMode('drawPen');
             else if (key === shortcutConfig.drawArrow.key) setMode('drawArrow');
+            else if (key === shortcutConfig.drawCurve.key) setMode('drawCurve');
+            else if (key === shortcutConfig.drawPolyline.key) setMode('drawPolyline');
+            else if (key === shortcutConfig.drawPolygon.key) setMode('drawPolygon');
             else if (key === shortcutConfig.drawSpot.key) setMode('drawSpot');
+            else if (key === shortcutConfig.drawPlayerTag.key) setMode('drawPlayerTag');
+            else if (key === shortcutConfig.addText.key) addText();
             else if (key === shortcutConfig.deleteObj.key) deleteObject();
+            else if (key === shortcutConfig.clearAll.key) clearAll();
             else if (key === ' ' || key === shortcutConfig.videoToggle.key) { e.preventDefault(); videoControl('toggle'); }
             else if (key === 'ArrowLeft') { e.preventDefault(); videoControl('rewind'); }
             else if (key === 'ArrowRight') { e.preventDefault(); videoControl('forward'); }
