@@ -110,9 +110,14 @@
         .btn-submit:disabled { background: #555; cursor: not-allowed; }
 
         /* 목록 관리 탭 버튼 CSS */
-        .manage-card { background: #333; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border: 1px solid #444; }
-        .manage-actions button { background: #444; border: none; color: white; padding: 6px 10px; border-radius: 5px; cursor: pointer; margin-left: 5px; transition: 0.2s; }
-        .manage-actions button:hover { background: var(--accent); }
+        .manage-group { margin-bottom: 10px; background: #2a2a2a; border-radius: 8px; border: 1px solid #444; overflow: hidden; }
+        .manage-group-header { background: #3a3a3a; padding: 10px 15px; font-weight: bold; color: var(--accent); display: flex; justify-content: space-between; align-items: center; }
+        .manage-match-item { padding: 10px 15px; border-top: 1px solid #444; display: flex; justify-content: space-between; align-items: center; background: #333; }
+        .manage-match-item:hover { background: #3d3d3d; }
+        .manage-btn { background: #444; border: none; color: white; padding: 5px 8px; border-radius: 4px; cursor: pointer; margin-left: 4px; font-size: 0.8rem; transition: 0.2s; }
+        .manage-btn:hover { background: #555; }
+        .manage-btn.edit { background: #3498db; }
+        .manage-btn.del { background: #e74c3c; }
 
         @media (max-width: 768px) {
             body { flex-direction: column; }
@@ -589,52 +594,105 @@
             return encodeURI(l);
         }
 
-        // --- 🔥 신규: 매치 목록 관리 기능 (Manage) ---
+        // --- 🔥 신규: 매치 목록 관리 기능 (Manage) - 그룹화 및 정렬 ---
+        function getGroupedMatches() {
+            const groups = [];
+            const compMap = new Map();
+            githubMatchesData.forEach((m, origIndex) => {
+                const cName = m.competition || "기타";
+                if(!compMap.has(cName)) {
+                    compMap.set(cName, { comp: cName, matches: [] });
+                    groups.push(compMap.get(cName));
+                }
+                compMap.get(cName).matches.push({ ...m, origIndex });
+            });
+            return groups;
+        }
+
+        function flattenGroups(groups) {
+            const newArr = [];
+            groups.forEach(g => {
+                g.matches.forEach(m => {
+                    const {origIndex, ...rest} = m;
+                    newArr.push(rest);
+                });
+            });
+            githubMatchesData = newArr;
+            renderManageList();
+            document.getElementById('manage-status').innerText = "순서가 변경되었습니다. (하단 '최종 저장'을 눌러야 깃허브에 반영됩니다)";
+        }
+
         function renderManageList() {
             const container = document.getElementById('manage-list-container');
             if(!container) return;
             container.innerHTML = '';
             
-            githubMatchesData.forEach((match, index) => {
-                const el = document.createElement('div');
-                el.className = 'manage-card';
-                el.innerHTML = `
-                    <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
-                        <span style="font-weight:bold; color:#fff; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">${match.title}</span>
-                        <span style="font-size:0.75rem; color:#aaa;">${match.competition || '기타'}</span>
+            const groups = getGroupedMatches();
+            
+            groups.forEach((g, cIdx) => {
+                const groupEl = document.createElement('div');
+                groupEl.className = 'manage-group';
+                
+                let matchesHTML = '';
+                g.matches.forEach((m, mIdx) => {
+                    matchesHTML += `
+                        <div class="manage-match-item">
+                            <span style="flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:0.9rem; color:#eee;">${m.title}</span>
+                            <div style="flex-shrink:0;">
+                                <button class="manage-btn" onclick="moveMatchInGroup(${cIdx}, ${mIdx}, -1)" ${mIdx === 0 ? 'disabled style="opacity:0.3"' : ''} title="경기 위로">▲</button>
+                                <button class="manage-btn" onclick="moveMatchInGroup(${cIdx}, ${mIdx}, 1)" ${mIdx === g.matches.length-1 ? 'disabled style="opacity:0.3"' : ''} title="경기 아래로">▼</button>
+                                <button class="manage-btn edit" onclick="openEditMatchByOrigIndex(${m.origIndex})" title="수정"><i class="fa-solid fa-pen"></i></button>
+                                <button class="manage-btn del" onclick="deleteMatchByOrigIndex(${m.origIndex})" title="삭제"><i class="fa-solid fa-trash"></i></button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                groupEl.innerHTML = `
+                    <div class="manage-group-header">
+                        <span><i class="fa-solid fa-folder-open"></i> ${g.comp}</span>
+                        <div>
+                            <button class="manage-btn" onclick="moveCompetition(${cIdx}, -1)" ${cIdx === 0 ? 'disabled style="opacity:0.3"' : ''} title="대회 위로 올리기">대회 ▲</button>
+                            <button class="manage-btn" onclick="moveCompetition(${cIdx}, 1)" ${cIdx === groups.length-1 ? 'disabled style="opacity:0.3"' : ''} title="대회 아래로 내리기">대회 ▼</button>
+                        </div>
                     </div>
-                    <div class="manage-actions" style="display:flex; align-items:center;">
-                        <button onclick="moveMatch(${index}, -1)" title="위로 올리기" ${index === 0 ? 'disabled style="opacity:0.3;"' : ''}><i class="fa-solid fa-chevron-up"></i></button>
-                        <button onclick="moveMatch(${index}, 1)" title="아래로 내리기" ${index === githubMatchesData.length-1 ? 'disabled style="opacity:0.3;"' : ''}><i class="fa-solid fa-chevron-down"></i></button>
-                        <button onclick="openEditMatch(${index})" title="수정" style="background:#3498db;"><i class="fa-solid fa-pen"></i></button>
-                        <button onclick="deleteMatch(${index})" title="삭제" style="background:#e74c3c;"><i class="fa-solid fa-trash"></i></button>
-                    </div>
+                    ${matchesHTML}
                 `;
-                container.appendChild(el);
+                container.appendChild(groupEl);
             });
         }
 
-        function moveMatch(index, direction) {
-            if(index + direction < 0 || index + direction >= githubMatchesData.length) return;
-            const temp = githubMatchesData[index];
-            githubMatchesData[index] = githubMatchesData[index + direction];
-            githubMatchesData[index + direction] = temp;
-            renderManageList();
-            document.getElementById('manage-status').innerText = "순서가 변경되었습니다. (저장을 눌러야 깃허브에 반영됩니다)";
+        function moveCompetition(compIndex, direction) {
+            const groups = getGroupedMatches();
+            if(compIndex + direction < 0 || compIndex + direction >= groups.length) return;
+            const temp = groups[compIndex];
+            groups[compIndex] = groups[compIndex + direction];
+            groups[compIndex + direction] = temp;
+            flattenGroups(groups);
         }
 
-        function deleteMatch(index) {
+        function moveMatchInGroup(compIndex, matchIndex, direction) {
+            const groups = getGroupedMatches();
+            const matches = groups[compIndex].matches;
+            if(matchIndex + direction < 0 || matchIndex + direction >= matches.length) return;
+            const temp = matches[matchIndex];
+            matches[matchIndex] = matches[matchIndex + direction];
+            matches[matchIndex + direction] = temp;
+            flattenGroups(groups);
+        }
+
+        function deleteMatchByOrigIndex(origIndex) {
             if(confirm("이 경기를 목록에서 삭제하시겠습니까?\n(최종 저장 시 깃허브에 반영됩니다)")) {
-                githubMatchesData.splice(index, 1);
+                githubMatchesData.splice(origIndex, 1);
                 renderManageList();
                 cancelEditMatch();
                 document.getElementById('manage-status').innerText = "목록에서 삭제되었습니다. (저장을 눌러야 깃허브에 반영됩니다)";
             }
         }
 
-        function openEditMatch(index) {
-            const match = githubMatchesData[index];
-            document.getElementById('edit-match-index').value = index;
+        function openEditMatchByOrigIndex(origIndex) {
+            const match = githubMatchesData[origIndex];
+            document.getElementById('edit-match-index').value = origIndex;
             document.getElementById('edit-match-competition').value = match.competition || "";
             document.getElementById('edit-match-title').value = match.title || "";
             document.getElementById('edit-match-video').value = match.video || "";
