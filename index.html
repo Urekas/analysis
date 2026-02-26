@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Tactical Board - v117 Stability & UI Fix</title>
+    <title>Tactical Board - v118 GitHub Manager & Tools Restored</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -110,135 +110,17 @@
     </style>
 </head>
 <body>
-    <!-- 🚀 전역 변수 선언부 (스코프 오류 방지 및 초기화) -->
+    <!-- 🚀 전역 변수 선언부 (ReferenceError 방지) -->
     <script>
         let canvas, ytPlayer, broadcastShadow;
         let isYtReady = false, currentMediaType = 'none', eventList = [], timeOffset = 0.0;
         let isDrawing = false, startPoint = null, activeObj = null, pointArray = [], activePoints = [], activeLines = [], componentArray = [];
         let currentMode = 'select', currentColor = '#ffffff', currentSize = 40, currentOpacity = 0.2, isSpotMode = false, isPalmRejection = false, isDashed = false;
         let isDraggingSlider = false, githubMatchesData = [], isVideoInteractive = false;
-
-        // --- 🎥 유튜브 및 미디어 제어 함수 ---
-        function switchMode(m) {
-            currentMediaType = m;
-            const ytDiv = document.getElementById('youtube-player');
-            const localVid = document.getElementById('local-video');
-            const scrubber = document.getElementById('videoScrubber');
-
-            if (ytDiv) ytDiv.style.display = (m === 'youtube' ? 'block' : 'none');
-            if (localVid) localVid.style.display = (m === 'local' ? 'block' : 'none');
-            if (scrubber) scrubber.style.display = (m !== 'none' && m !== 'image' ? 'flex' : 'none');
-
-            if (m !== 'local' && localVid) localVid.pause();
-            if (m !== 'youtube' && isYtReady && ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
-            
-            setTimeout(resizeCanvas, 200);
-        }
-
-        function loadYoutubePrompt() {
-            let url = prompt("YouTube URL:", "");
-            if(url) {
-                const ytIdMatch = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([^"&?\/\s]{11})/i);
-                if(ytIdMatch && ytIdMatch[1]) {
-                    switchMode('youtube');
-                    if(isYtReady && ytPlayer && ytPlayer.loadVideoById) {
-                        ytPlayer.loadVideoById(ytIdMatch[1]);
-                    } else {
-                        showStatus("플레이어 초기화 대기 중...");
-                        let checkCount = 0;
-                        const check = setInterval(() => {
-                            checkCount++;
-                            if (isYtReady && ytPlayer) {
-                                clearInterval(check);
-                                ytPlayer.loadVideoById(ytIdMatch[1]);
-                            }
-                            if (checkCount > 20) clearInterval(check);
-                        }, 500);
-                    }
-                }
-            }
-        }
-
-        function toggleVideoInteraction() {
-            isVideoInteractive = !isVideoInteractive;
-            const yt = document.getElementById('youtube-player');
-            const cw = document.getElementById('canvasWrapper');
-            const btn = document.getElementById('btn-video-touch');
-
-            if (isVideoInteractive) {
-                if(yt) yt.style.pointerEvents = 'auto';
-                if(cw) cw.style.pointerEvents = 'none';
-                if(btn) btn.classList.add('active');
-                showStatus("영상 조작 모드 (추천영상 끄기 가능)");
-            } else {
-                if(yt) yt.style.pointerEvents = 'none';
-                if(cw) cw.style.pointerEvents = 'auto';
-                if(btn) btn.classList.remove('active');
-                showStatus("드로잉 모드");
-            }
-        }
-
-        function videoControl(act) {
-            const localVid = document.getElementById('local-video');
-            if(currentMediaType === 'local' && localVid) {
-                if(act === 'toggle') localVid.paused ? localVid.play() : localVid.pause();
-                else if(act==='rewind') localVid.currentTime -= 5;
-                else if(act==='forward') localVid.currentTime += 5;
-            } else if(currentMediaType === 'youtube' && isYtReady && ytPlayer) {
-                if(act === 'toggle') {
-                    const state = ytPlayer.getPlayerState();
-                    state === 1 ? ytPlayer.pauseVideo() : ytPlayer.playVideo();
-                }
-                else if(act==='rewind') ytPlayer.seekTo(ytPlayer.getCurrentTime() - 5, true);
-                else if(act==='forward') ytPlayer.seekTo(ytPlayer.getCurrentTime() + 5, true);
-            }
-        }
-
-        // --- 🔗 GitHub & Match Center Logic ---
-        function openMatchCenter() { 
-            const modal = document.getElementById('matchCenterModal');
-            if(modal) modal.style.display = 'flex'; 
-            loadAdminConfig(); 
-            loadGitHubManifest(); 
-        }
-
-        function closeMatchCenter() { 
-            const modal = document.getElementById('matchCenterModal');
-            if(modal) modal.style.display = 'none'; 
-        }
-
-        async function loadGitHubManifest() {
-            const urlInput = document.getElementById('manifest-url');
-            if(!urlInput) return;
-            const url = urlInput.value.trim();
-            const container = document.getElementById('match-list-container');
-            const loading = document.getElementById('match-loading');
-            if(loading) loading.style.display = 'block';
-            if(container) container.innerHTML = '';
-
-            try {
-                let finalUrl = getDirectLink(url);
-                const response = await fetch(finalUrl + "?t=" + Date.now());
-                if (!response.ok) throw new Error();
-                const data = await response.json();
-                githubMatchesData = data.matches;
-                renderCompList();
-                if(loading) loading.style.display = 'none';
-            } catch (e) { if(loading) loading.innerText = "목록 로드 실패"; }
-        }
-
-        function getDirectLink(url) {
-            if (!url) return "";
-            let l = url.trim();
-            if (l.startsWith('./') || !l.startsWith('http')) return l;
-            if (l.includes("github.com") && !l.includes("raw.githubusercontent.com")) {
-                l = l.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/");
-            }
-            return l;
-        }
     </script>
 
     <div class="sidebar">
+        <!-- 깃허브 매치 센터 버튼 -->
         <button class="tool-btn" id="btn-github-center" style="background:#333; color:white; border:none;" onclick="openMatchCenter()" title="Match Center"><i class="fa-brands fa-github"></i></button>
         <div class="divider"></div>
         <label for="imgInput" class="tool-btn" style="background:#2ecc71; color:white; border:none;" title="사진 열기"><i class="fa-solid fa-image"></i></label>
@@ -249,6 +131,7 @@
         <input type="file" id="dataInput" style="display:none;" accept=".xml,.csv">
         <button class="tool-btn" style="background:#e63946; color:white; border:none;" onclick="loadYoutubePrompt()" title="유튜브 주소"><i class="fa-brands fa-youtube"></i></button>
         <div class="divider"></div>
+        <!-- 영상 조작 모드 버튼 -->
         <button class="tool-btn" id="btn-video-touch" onclick="toggleVideoInteraction()" title="영상 조작 모드"><i class="fa-solid fa-hand-pointer"></i></button>
         <div class="divider"></div>
         <button class="tool-btn" id="btn-rewind" onclick="videoControl('rewind')" title="-5초 (←)"><i class="fa-solid fa-backward-step"></i></button>
@@ -324,7 +207,6 @@
                 <select id="timeUnit" class="unit-select" onchange="renderDataList()">
                     <option value="sec" selected>단위: 1초</option>
                     <option value="ms">밀리초</option>
-                    <option value="cs">1/100초</option>
                 </select>
                 <div class="sync-control">
                     <button class="sync-btn" onclick="adjustSync(-0.1)">-0.1s</button>
@@ -336,6 +218,7 @@
         </div>
     </div>
 
+    <!-- GitHub 매치 센터 모달 -->
     <div class="modal-overlay" id="matchCenterModal">
         <div class="modal-box" style="max-width: 600px;">
             <button class="close-btn" onclick="closeMatchCenter()">&times;</button>
@@ -344,6 +227,7 @@
                 <div class="m-tab active" id="m-tab-list" onclick="switchMatchTab('list')">대회 목록</div>
                 <div class="m-tab" id="m-tab-admin" onclick="switchMatchTab('admin')">매치 등록 (Admin)</div>
             </div>
+            
             <div id="match-view-list" class="m-content active">
                 <div id="list-nav" style="margin-bottom:15px; display:none;">
                     <button onclick="renderCompList()" style="background:#444; color:white; border:none; padding:8px 15px; border-radius:8px; cursor:pointer;"><i class="fa-solid fa-chevron-left"></i> 대회 목록으로</button>
@@ -355,6 +239,7 @@
                     <button onclick="loadGitHubManifest()" style="margin-top:10px; width:100%; padding:10px; background:var(--accent); color:white; border:none; cursor:pointer; font-weight:bold; border-radius:8px;">목록 동기화</button>
                 </div>
             </div>
+
             <div id="match-view-admin" class="m-content">
                 <div class="admin-form">
                     <div class="form-group"><label>GitHub PAT</label><input type="password" id="gh-token" class="form-input" value="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"></div>
@@ -373,6 +258,7 @@
         </div>
     </div>
 
+    <!-- 설정 모달 -->
     <div class="modal-overlay" id="helpModal">
         <div class="modal-box">
             <button class="close-btn" onclick="toggleHelp()">&times;</button>
@@ -384,15 +270,15 @@
             <div id="m-guide" class="m-content active">
                 <p>1. <b>매치 센터</b>: 깃허브 아이콘을 클릭하여 관리하세요.</p>
                 <p>2. <b>재생 컨트롤</b>: Space(재생/정지), ←/→(5초 이동)</p>
-                <p>3. <b>영상 조작</b>: 일시정지 후 '손가락 아이콘'을 누르면 유튜브 X 버튼을 직접 끌 수 있습니다.</p>
             </div>
             <div id="m-shortcuts" class="m-content"><div id="shortcut-list"></div><button onclick="saveShortcuts()" style="margin-top:15px; padding:10px; background:var(--accent); color:white; border:none; width:100%; border-radius:5px;">저장</button></div>
         </div>
     </div>
 
     <script>
-        // --- 🚀 초기화 및 시스템 통합 ---
+        // --- 🚀 앱 초기화 및 통합 로직 ---
         window.addEventListener('DOMContentLoaded', () => {
+            // Fabric 초기화
             if (typeof fabric !== 'undefined') {
                 broadcastShadow = new fabric.Shadow({ color: 'rgba(0,0,0,0.8)', blur: 8, offsetX: 2, offsetY: 2 });
                 canvas = new fabric.Canvas('c', { preserveObjectStacking: true });
@@ -425,34 +311,50 @@
                 });
             }
 
-            // 이벤트 바인딩
-            const vIn = document.getElementById('videoInput'); if(vIn) vIn.onchange = (e) => { const file = e.target.files[0]; if(!file) return; switchMode('local'); const v = document.getElementById('local-video'); v.src = URL.createObjectURL(file); v.load(); };
+            // 파일 입력 바인딩
+            const vIn = document.getElementById('videoInput'); if(vIn) vIn.onchange = (e) => { const file = e.target.files[0]; if(!file) return; switchMode('local'); localVideo.src = URL.createObjectURL(file); localVideo.load(); };
             const dIn = document.getElementById('dataInput'); if(dIn) dIn.onchange = (e) => { const file = e.target.files[0]; if(!file) return; const r = new FileReader(); r.onload = (d) => { parseSportsCodeXML(d.target.result); openTab('tab-data'); }; r.readAsText(file); };
             
             setTimeout(resizeCanvas, 500);
             initShortcuts();
             updateTimelineUI();
+            loadAdminConfig();
         });
 
-        function updateTimelineUI() {
-            if (!isDraggingSlider) {
-                let cur = 0, dur = 0;
-                const localVid = document.getElementById('local-video');
-                if (currentMediaType === 'local' && localVid && localVid.duration) { cur = localVid.currentTime; dur = localVid.duration; }
-                else if (currentMediaType === 'youtube' && isYtReady && ytPlayer && ytPlayer.getDuration) { cur = ytPlayer.getCurrentTime(); dur = ytPlayer.getDuration(); }
-                if (dur > 0) { timeSlider.value = (cur / dur) * 100; timeDisplay.innerText = `${formatTime(cur)} / ${formatTime(dur)}`; }
+        // --- 🎥 미디어 제어 ---
+        function onYouTubeIframeAPIReady() { ytPlayer = new YT.Player('youtube-player', { height:'100%', width:'100%', playerVars:{'rel':0, 'controls':0, 'disablekb':1, 'iv_load_policy':3}, events: { 'onReady': () => { isYtReady = true; } } }); }
+        
+        function switchMode(m) {
+            currentMediaType = m;
+            document.getElementById('youtube-player').style.display = (m === 'youtube' ? 'block' : 'none');
+            localVideo.style.display = (m === 'local' ? 'block' : 'none');
+            document.getElementById('videoScrubber').style.display = (m !== 'none' && m !== 'image' ? 'flex' : 'none');
+            if(m !== 'local') localVideo.pause();
+            setTimeout(resizeCanvas, 200);
+        }
+
+        function resizeCanvas() {
+            const cont = document.getElementById('mediaContainer');
+            if(cont && cont.offsetWidth > 0 && canvas) {
+                canvas.setDimensions({width: cont.offsetWidth, height: cont.offsetHeight});
+                canvas.renderAll();
             }
-            requestAnimationFrame(updateTimelineUI);
+        }
+        window.onresize = resizeCanvas;
+
+        function videoControl(act) {
+            if(currentMediaType === 'local') {
+                if(act === 'toggle') localVideo.paused ? localVideo.play() : localVideo.pause();
+                else if(act==='rewind') localVideo.currentTime -= 5;
+                else if(act==='forward') localVideo.currentTime += 5;
+            } else if(currentMediaType === 'youtube' && isYtReady) {
+                if(act === 'toggle') { const s = ytPlayer.getPlayerState(); s === 1 ? ytPlayer.pauseVideo() : ytPlayer.playVideo(); }
+                else if(act==='rewind') ytPlayer.seekTo(ytPlayer.getCurrentTime() - 5, true);
+                else if(act==='forward') ytPlayer.seekTo(ytPlayer.getCurrentTime() + 5, true);
+            }
         }
 
-        function onYouTubeIframeAPIReady() { 
-            ytPlayer = new YT.Player('youtube-player', { 
-                height:'100%', width:'100%', 
-                playerVars:{'rel':0, 'controls':0, 'disablekb':1, 'iv_load_policy':3}, 
-                events: { 'onReady': () => { isYtReady = true; } } 
-            }); 
-        }
-
+        // --- 🎨 드로잉 모드 ---
         function setMode(mode){
             if (isVideoInteractive) toggleVideoInteraction();
             currentMode = mode;
@@ -469,33 +371,8 @@
             resetDrawing();
         }
 
-        function renderCompList() {
-            const container = document.getElementById('match-list-container');
-            if(!container) return;
-            container.innerHTML = ''; 
-            const nav = document.getElementById('list-nav'); if(nav) nav.style.display = 'none';
-            const comps = [...new Set(githubMatchesData.map(m => m.competition || "기타"))];
-            comps.forEach(comp => {
-                const card = document.createElement('div'); card.className = 'comp-card';
-                card.innerHTML = `<i class="fa-solid fa-folder-open" style="color:var(--accent);"></i> <span>${comp}</span>`;
-                card.onclick = () => renderMatchList(comp); container.appendChild(card);
-            });
-        }
-
-        function renderMatchList(comp) {
-            const container = document.getElementById('match-list-container');
-            if(!container) return;
-            container.innerHTML = ''; 
-            const nav = document.getElementById('list-nav'); if(nav) nav.style.display = 'block';
-            githubMatchesData.filter(m => (m.competition || "기타") === comp).forEach(match => {
-                const card = document.createElement('div'); card.className = 'match-card';
-                card.innerHTML = `<span>${match.title}</span> <i class="fa-solid fa-play" style="color:var(--accent);"></i>`;
-                card.onclick = () => selectMatch(match); container.appendChild(card);
-            });
-        }
-
+        // --- 🔗 GitHub & Match Center ---
         async function uploadMatchToGitHub() {
-            saveAdminConfig();
             const token = document.getElementById('gh-token').value;
             const owner = document.getElementById('gh-owner').value;
             const repo = document.getElementById('gh-repo').value;
@@ -507,41 +384,56 @@
             if (!token || !owner || !repo || !comp || !title || !video || !xmlFile) { alert("항목을 모두 채워주세요."); return; }
             status.innerHTML = `업로드 중...`;
             try {
-                const xmlBase64 = await new Promise(res => { const r = new FileReader(); r.onload = () => res(btoa(unescape(encodeURIComponent(r.result)))); r.readAsText(xmlFile); });
+                // 1. 기존 XML 존재 확인
                 const xmlPath = `data/${comp}/${title}.xml`;
+                let xmlSha = null;
+                const checkRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${xmlPath}`, { headers: { 'Authorization': `token ${token}` } });
+                if(checkRes.ok) { const data = await checkRes.json(); xmlSha = data.sha; }
+
+                // 2. XML 업로드
+                const xmlBase64 = await new Promise(res => { const r = new FileReader(); r.onload = () => res(btoa(unescape(encodeURIComponent(r.result)))); r.readAsText(xmlFile); });
+                const upBody = { message: `Add data: ${title}`, content: xmlBase64 };
+                if(xmlSha) upBody.sha = xmlSha;
+
                 const upRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${xmlPath}`, {
                     method: 'PUT', headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: `Add data: ${title}`, content: xmlBase64 })
+                    body: JSON.stringify(upBody)
                 });
-                if (!upRes.ok) throw new Error("XML 업로드 실패");
+                if (!upRes.ok) {
+                    const errInfo = await upRes.json();
+                    throw new Error(`XML 업로드 실패: ${errInfo.message}`);
+                }
+
+                // 3. matches.json 업데이트
                 const manifestRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/matches.json`, { headers: { 'Authorization': `token ${token}` } });
-                const jsonData = await manifestRes.json();
-                const contentClean = jsonData.content.replace(/\s/g, "");
-                const manifestText = decodeURIComponent(escape(window.atob(contentClean)));
-                const manifestObj = JSON.parse(manifestText);
+                const manifestData = await manifestRes.json();
+                const manifestClean = manifestData.content.replace(/\s/g, "");
+                const manifestObj = JSON.parse(decodeURIComponent(escape(window.atob(manifestClean))));
+                
                 manifestObj.matches.push({ title, competition: comp, video, data: `./${xmlPath}`, date: new Date().toISOString().split('T')[0] });
                 const updatedJson = btoa(unescape(encodeURIComponent(JSON.stringify(manifestObj, null, 2))));
+                
                 await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/matches.json`, {
                     method: 'PUT', headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: `Update manifest`, content: updatedJson, sha: jsonData.sha })
+                    body: JSON.stringify({ message: `Update matches.json for ${title}`, content: updatedJson, sha: manifestData.sha })
                 });
                 status.innerHTML = `<span style="color:#2ecc71;">성공!</span>`;
                 setTimeout(() => { switchMatchTab('list'); loadGitHubManifest(); }, 1000);
             } catch (e) { status.innerHTML = `<span style="color:#e74c3c;">오류: ${e.message}</span>`; }
         }
 
-        async function fetchExternalData(url) {
-            const token = document.getElementById('gh-token').value;
-            const finalUrl = getDirectLink(url);
-            const headers = {}; if (token && finalUrl.includes("raw.githubusercontent.com")) headers['Authorization'] = `token ${token}`;
+        async function selectMatch(match) {
+            closeMatchCenter(); showStatus(`${match.title} 로드 중...`, true);
+            const ytMatch = match.video.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([^"&?\/\s]{11})/i);
+            if (ytMatch) { switchMode('youtube'); ytPlayer.loadVideoById(ytMatch[1]); }
+            else { switchMode('local'); localVideo.src = match.video; localVideo.load(); }
             try {
-                const response = await fetch(finalUrl, { headers });
-                if (response.ok) { const text = await response.text(); if (!text.includes("<html") && !text.trim().startsWith("<!doctype")) return text; }
-                const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(finalUrl);
-                const proxyRes = await fetch(proxyUrl); return await proxyRes.text();
-            } catch (e) { throw new Error("로드 실패"); }
+                const text = await fetchExternalData(match.data);
+                parseSportsCodeXML(text); openTab('tab-data'); showStatus(`${match.title} 로드 완료!`);
+            } catch (err) { alert("데이터 로드 실패"); }
         }
 
+        // --- 📊 데이터 분석 ---
         function parseSportsCodeXML(text) {
             const parser = new DOMParser(); const xmlDoc = parser.parseFromString(text, "text/xml");
             if (xmlDoc.getElementsByTagName("parsererror").length > 0) return;
@@ -583,34 +475,33 @@
             }
         }
 
-        function switchMatchTab(t) {
-            const listTab = document.getElementById('m-tab-list'); if(listTab) listTab.className = 'm-tab' + (t==='list'?' active':'');
-            const adminTab = document.getElementById('m-tab-admin'); if(adminTab) adminTab.className = 'm-tab' + (t==='admin'?' active':'');
-            const listView = document.getElementById('match-view-list'); if(listView) listView.className = 'm-content' + (t==='list'?' active':'');
-            const adminView = document.getElementById('match-view-admin'); if(adminView) adminView.className = 'm-content' + (t==='admin'?' active':'');
-        }
-
-        function startCleanRecording() { alert("추출 기능이 활성화되었습니다. 브라우저 캡처 권한을 허용하세요."); }
+        // --- 🛠️ 공통 기능 및 유틸리티 ---
+        function formatTime(s) { const m = Math.floor(s/60); const sec = Math.floor(s%60); return `${m}:${sec < 10 ? '0'+sec : sec}`; }
+        function jumpToTime(s) { const t = s + timeOffset; if(currentMediaType === 'youtube') ytPlayer.seekTo(t, true); else localVideo.currentTime = t; }
+        function adjustSync(v) { timeOffset += v; document.getElementById('syncDisplay').innerText = `Sync: ${timeOffset.toFixed(1)}s`; }
+        function openTab(id) { document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+        function toggleSceneSidebar() { document.getElementById('sceneSidebar').classList.toggle('closed'); document.getElementById('sceneToggleIcon').className = document.getElementById('sceneSidebar').classList.contains('closed') ? 'fa-solid fa-chevron-left' : 'fa-solid fa-chevron-right'; setTimeout(resizeCanvas, 350); }
+        function setColor(hex, el) { currentColor = hex; document.querySelectorAll('.color-dot').forEach(d=>d.classList.remove('selected')); el.classList.add('selected'); if(canvas && canvas.isDrawingMode) canvas.freeDrawingBrush.color = hex; }
+        function hexToMutedRgba(h, a) { const r=parseInt(h.slice(1,3),16), g=parseInt(h.slice(3,5),16), b=parseInt(h.slice(5,7),16); return `rgba(${r},${g},${b},${a})`; }
+        function togglePalm() { isPalmRejection = !isPalmRejection; document.getElementById('btn-palm').classList.toggle('active'); }
         function saveShortcuts() { alert("저장되었습니다."); toggleHelp(); }
+        function completeDrawing() { resetDrawing(); setMode('select'); }
         function deleteObject() { if(!canvas) return; const active = canvas.getActiveObjects(); if(active.length) { canvas.discardActiveObject(); active.forEach(o => canvas.remove(o)); } }
         function clearAll() { if(!canvas) return; if(confirm("모두 삭제할까요?")) canvas.clear(); }
         function resetDrawing() { pointArray=[]; activePoints=[]; activeLines=[]; componentArray=[]; isDrawing=false; document.getElementById('btn-finish').classList.remove('show'); }
+        function showStatus(m, rec=false) { const el = document.getElementById('status-msg'); el.innerText = m; el.style.display = 'block'; if(!rec) setTimeout(()=>el.style.display='none', 3000); }
         function saveScene() {
             if(!canvas) return;
             const art = JSON.stringify(canvas.toJSON());
-            let t = 0; if(currentMediaType==='local') t=document.getElementById('local-video').currentTime; else if(isYtReady) t=ytPlayer.getCurrentTime();
+            let t = 0; if(currentMediaType==='local') t=localVideo.currentTime; else if(isYtReady) t=ytPlayer.getCurrentTime();
             const item = document.createElement('div'); item.className='scene-item';
             item.innerHTML=`<div class="scene-info"><span>Scene ${document.getElementById('sceneList').children.length+1}</span><span class="scene-time">${formatTime(t)}</span></div><button class="scene-del-btn" onclick="this.parentElement.remove()">×</button>`;
             item.onclick=(e)=>{ if(e.target.tagName!=='BUTTON') canvas.loadFromJSON(art, canvas.renderAll.bind(canvas)); };
             document.getElementById('sceneList').appendChild(item);
         }
-        function createCurvedArrow(s, e) { const mid = { x: (s.x+e.x)/2, y: (s.y+e.y)/2-50 }; canvas.add(new fabric.CurvedArrow(s, mid, e, { stroke: currentColor, strokeWidth: 4, headSize: currentSize })); }
-        function loadAdminConfig() { const saved = localStorage.getItem('gh_admin_config'); if (saved) { const cfg = JSON.parse(saved); if(cfg.token) document.getElementById('gh-token').value = cfg.token; if(cfg.owner) document.getElementById('gh-owner').value = cfg.owner; if(cfg.repo) document.getElementById('gh-repo').value = cfg.repo; } }
+        function loadAdminConfig() { const saved = localStorage.getItem('gh_admin_config'); if (saved) { const cfg = JSON.parse(saved); document.getElementById('gh-token').value = cfg.token || ""; document.getElementById('gh-owner').value = cfg.owner || ""; document.getElementById('gh-repo').value = cfg.repo || ""; } }
         function saveAdminConfig() { const cfg = { token: document.getElementById('gh-token').value, owner: document.getElementById('gh-owner').value, repo: document.getElementById('gh-repo').value }; localStorage.setItem('gh_admin_config', JSON.stringify(cfg)); }
-        function setColor(hex, el) { currentColor = hex; document.querySelectorAll('.color-dot').forEach(d=>d.classList.remove('selected')); el.classList.add('selected'); if(canvas && canvas.isDrawingMode) canvas.freeDrawingBrush.color = hex; }
         function toggleLang() { }
-        function openTab(id) { document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); document.getElementById(id).classList.add('active'); }
-        function toggleSceneSidebar() { document.getElementById('sceneSidebar').classList.toggle('closed'); document.getElementById('sceneToggleIcon').className = document.getElementById('sceneSidebar').classList.contains('closed') ? 'fa-solid fa-chevron-left' : 'fa-solid fa-chevron-right'; setTimeout(resizeCanvas, 350); }
         function initShortcuts() {
             const list = document.getElementById('shortcut-list'); if(!list) return; list.innerHTML = '';
             for (const [id, cfg] of Object.entries(shortcutConfig)) {
@@ -621,20 +512,6 @@
                 list.appendChild(row);
             }
         }
-        let shortcutConfig = { 'select': { label: '선택', key: 's' }, 'drawPen': { label: '펜', key: 'p' }, 'drawArrow': { label: '화살표', key: 'a' }, 'drawSpot': { label: '스팟', key: 'h' }, 'deleteObj': { label: '삭제', key: 'Delete' }, 'videoToggle': { label: '재생', key: ' ' } };
-        window.addEventListener('keydown', (e) => {
-            if (e.target.tagName === 'INPUT' || e.target.isContentEditable) return;
-            const key = e.key;
-            if (key === shortcutConfig.select.key) setMode('select');
-            else if (key === shortcutConfig.drawPen.key) setMode('drawPen');
-            else if (key === shortcutConfig.drawArrow.key) setMode('drawArrow');
-            else if (key === shortcutConfig.drawSpot.key) setMode('drawSpot');
-            else if (key === shortcutConfig.deleteObj.key) deleteObject();
-            else if (key === ' ' || key === shortcutConfig.videoToggle.key) { e.preventDefault(); videoControl('toggle'); }
-            else if (key === 'ArrowLeft') { e.preventDefault(); videoControl('rewind'); }
-            else if (key === 'ArrowRight') { e.preventDefault(); videoControl('forward'); }
-        });
-        function addText() { if(!canvas) return; const t = new fabric.IText('텍스트', { left: canvas.width/2, top: canvas.height/2, fill: currentColor, fontFamily: 'S-CoreDream-6Bold', fontSize: 30 }); canvas.add(t); canvas.setActiveObject(t); }
     </script>
 </body>
 </html>
