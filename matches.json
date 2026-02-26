@@ -6,6 +6,13 @@
       "date": "2024-11-20",
       "video": "https://www.youtube.com/watch?v=FvThFJq8B0o",
       "data": "data/M06_IndvsJpn.xml"
+    },
+    {
+      "title": "테스트",
+      "competition": "2026 여자 월드컵 예선",
+      "video": "https://youtu.be/Lp44oVNdT_E",
+      "data": "./data/2026 여자 월드컵 예선/테스트.xml",
+      "date": "2026-02-26"
     }
   ]
 }
