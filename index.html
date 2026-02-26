@@ -1914,6 +1914,24 @@
             }
         }
 
+        // 🔧 arrayBuffer를 UTF-8로 명시 디코딩 (BOM 자동 제거 포함)
+        async function safeDecodeResponse(response) {
+            const buf = await response.arrayBuffer();
+            const bytes = new Uint8Array(buf);
+            // UTF-8 BOM (EF BB BF) 제거
+            let start = 0;
+            if (bytes.length >= 3 && bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF) start = 3;
+            // UTF-16 LE BOM (FF FE) 제거 → UTF-16 LE 디코딩
+            else if (bytes.length >= 2 && bytes[0] === 0xFF && bytes[1] === 0xFE) {
+                try { return new TextDecoder('utf-16le').decode(bytes.slice(2)); } catch (e) { }
+            }
+            // UTF-16 BE BOM (FE FF) 제거 → UTF-16 BE 디코딩
+            else if (bytes.length >= 2 && bytes[0] === 0xFE && bytes[1] === 0xFF) {
+                try { return new TextDecoder('utf-16be').decode(bytes.slice(2)); } catch (e) { }
+            }
+            return new TextDecoder('utf-8').decode(bytes.slice(start));
+        }
+
         async function fetchExternalData(url) {
             const token = document.getElementById('gh-token').value;
             const owner = document.getElementById('gh-owner').value;
@@ -1927,7 +1945,7 @@
                 if (!token || !owner || !repo) {
                     try {
                         const localRes = await fetch(path);
-                        if (localRes.ok) return await localRes.text();
+                        if (localRes.ok) return await safeDecodeResponse(localRes);
                     } catch (e) { console.log("Local fetch failed", e); }
                     throw new Error("Local File API or GitHub Token required for " + path);
                 }
@@ -1945,7 +1963,7 @@
                             'Accept': 'application/vnd.github.v3.raw'
                         }
                     });
-                    if (response.ok) return await response.text();
+                    if (response.ok) return await safeDecodeResponse(response);
                 } catch (e) {
                     console.log("GitHub API fetch fallback", e);
                 }
@@ -1955,9 +1973,15 @@
             const headers = {}; if (token && finalUrl.includes("raw.githubusercontent.com")) headers['Authorization'] = `token ${token}`;
             try {
                 const response = await fetch(finalUrl, { headers });
-                if (response.ok) { const text = await response.text(); if (!text.includes("<html") && !text.trim().startsWith("<!doctype")) return text; }
+                if (response.ok) {
+                    const text = await safeDecodeResponse(response);
+                    const lower = text.trimStart().toLowerCase();
+                    // HTML 에러 페이지(대소문자 무관) 걸러내기
+                    if (!lower.startsWith("<!doctype") && !lower.startsWith("<html")) return text;
+                }
                 const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(finalUrl);
-                const proxyRes = await fetch(proxyUrl); return await proxyRes.text();
+                const proxyRes = await fetch(proxyUrl);
+                return await safeDecodeResponse(proxyRes);
             } catch (e) { throw new Error("로드 실패: " + e.message); }
         }
 
@@ -2157,24 +2181,36 @@
         // --- 📊 데이터 분석 파싱 ---
         function parseSportsCodeXML(rawText) {
             let text = rawText || '';
-            // BOM 및 첫 '<' 이전의 모든 garbage 문자 제거
-            // (UTF-8 BOM, UTF-16 BOM 잘못 디코딩된 '??' 등 모두 처리)
+
+            // 1단계: null bytes 및 비정상 제어문자 제거 (모바일에서 간혹 발생)
+            text = text.replace(/\x00/g, '');
+
+            // 2단계: 첫 '<' 이전의 모든 garbage 제거
+            // (UTF-8 BOM, UTF-16 BOM 잘못 디코딩된 문자, 공백 등 모두 처리)
             const xmlStart = text.indexOf('<');
-            if (xmlStart > 0) {
-                text = text.substring(xmlStart);
+            if (xmlStart < 0) {
+                // '<'가 전혀 없으면 XML이 아닌 다른 포맷 (JSON 등) 가능성
+                const listEl = document.getElementById('dataList');
+                if (listEl) listEl.innerHTML = `<div style="color:#e74c3c; padding:15px; font-size:0.8rem;">⚠️ XML 파싱 오류: XML 태그(&lt;)를 찾을 수 없습니다.<br><code style="font-size:0.75rem; word-break:break-all;">${(text.substring(0, 80) || '(비어있음)').replace(/</g, '&lt;')}</code></div>`;
+                return;
             }
+            if (xmlStart > 0) text = text.substring(xmlStart);
             text = text.trim();
+
+            // 3단계: XML 선언부의 인코딩 속성을 'UTF-8'로 강제 정규화
+            // (모바일 DOMParser는 선언부 인코딩이 맞지 않으면 파싱 실패)
+            text = text.replace(/(<\?xml[^>]*?)encoding=["'][^"']*["']/i, '$1encoding="UTF-8"');
 
             const parser = new DOMParser();
             let xmlDoc = parser.parseFromString(text, "text/xml");
 
-            // 3. text/xml 실패 시 application/xml 폴백 (iOS Safari 호환)
+            // text/xml 실패 시 application/xml 폴백 (iOS Safari 호환)
             if (xmlDoc.getElementsByTagName("parsererror").length > 0) {
                 xmlDoc = parser.parseFromString(text, "application/xml");
             }
 
             if (xmlDoc.getElementsByTagName("parsererror").length > 0) {
-                const preview = text.substring(0, 80).replace(/</g, '&lt;');
+                const preview = text.substring(0, 150).replace(/</g, '&lt;');
                 const listEl = document.getElementById('dataList');
                 if (listEl) listEl.innerHTML = `<div style="color:#e74c3c; padding:15px; font-size:0.8rem;">⚠️ XML 파싱 오류<br><span style="color:#aaa;">수신된 내용 앞부분:</span><br><code style="font-size:0.75rem; word-break:break-all;">${preview || '(비어있음)'}</code></div>`;
                 return;
