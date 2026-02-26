@@ -6,6 +6,13 @@
       "video": "https://www.youtube.com/watch?v=O9IFnzFO_Uo",
       "data": "./data/2026_WomensQulifier/M01_JPNvsIND.xml",
       "date": "2026-02-26"
+    },
+    {
+      "title": "테스트",
+      "competition": "2026_MensQulifiers",
+      "video": "https://youtu.be/H91WuirY6Zs",
+      "data": "data/2026_MensQulifiers/테스트.xml",
+      "date": "2026-02-26"
     }
   ]
 }
