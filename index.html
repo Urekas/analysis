@@ -998,8 +998,13 @@
                         <div class="form-group"><label>Repo</label><input type="text" id="gh-repo" class="form-input"
                                 value="analysis"></div>
                     </div>
-                    <div class="form-group"><label>대회 이름</label><input type="text" id="match-competition"
-                            class="form-input" placeholder="2024 아시아컵"></div>
+                    <div class="form-group">
+                        <label>대회 이름</label>
+                        <select id="match-competition-select" class="form-input"
+                            onchange="toggleNewCompInput()"></select>
+                        <input type="text" id="match-competition-new" class="form-input" placeholder="새 대회 이름 (직접 입력)"
+                            style="display:none; margin-top:5px;">
+                    </div>
                     <div class="form-group"><label>경기 제목</label><input type="text" id="match-title" class="form-input"
                             placeholder="인도 vs 일본"></div>
                     <div class="form-group"><label>유튜브 URL</label><input type="text" id="match-video" class="form-input"
@@ -1253,6 +1258,30 @@
             document.getElementById('match-view-manage').className = 'm-content' + (t === 'manage' ? ' active' : '');
 
             if (t === 'manage') renderManageList();
+            if (t === 'admin') updateCompSelect();
+        }
+
+        function updateCompSelect() {
+            const select = document.getElementById('match-competition-select');
+            if (!select) return;
+            select.innerHTML = '<option value="">-- 기존 대회 선택 --</option>';
+            const comps = [...new Set(githubMatchesData.map(m => m.competition || "기타"))].filter(c => c !== "기타");
+            comps.forEach(c => {
+                select.innerHTML += `<option value="${c}">${c}</option>`;
+            });
+            select.innerHTML += '<option value="NEW">➕ 새 대회 직접 입력...</option>';
+            toggleNewCompInput();
+        }
+
+        function toggleNewCompInput() {
+            const select = document.getElementById('match-competition-select');
+            const input = document.getElementById('match-competition-new');
+            if (select.value === 'NEW' || select.options.length <= 2) {
+                input.style.display = 'block';
+                if (select.options.length <= 2) select.value = 'NEW';
+            } else {
+                input.style.display = 'none';
+            }
         }
 
         async function loadGitHubManifest() {
@@ -1558,8 +1587,9 @@
             status.innerHTML = `변경사항을 깃허브에 저장 중...`;
 
             try {
-                const manifestRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/matches.json`, { headers: { 'Authorization': `token ${token}` } });
-                if (!manifestRes.ok) throw new Error("matches.json 정보를 가져오지 못했습니다.");
+                // 저장 전 항상 matches.json의 최신 SHA 항목을 가져옵니다.
+                const manifestRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/matches.json?t=${Date.now()}`, { headers: { 'Authorization': `token ${token}` } });
+                if (!manifestRes.ok) throw new Error("matches.json 최신 정보를 가져오지 못했습니다.");
                 const manifestData = await manifestRes.json();
 
                 const manifestObj = { matches: githubMatchesData };
@@ -1574,7 +1604,7 @@
                     body: JSON.stringify({ message: `Update matches list (Manage)`, content: updatedJsonB64, sha: manifestData.sha })
                 });
 
-                if (!finalUpRes.ok) throw new Error(`업데이트 실패`);
+                if (!finalUpRes.ok) throw new Error(`업데이트 실패 (HTTP ${finalUpRes.status})`);
 
                 status.innerHTML = `<span style="color:#2ecc71;">성공적으로 깃허브에 완벽히 저장되었습니다!</span>`;
                 setTimeout(() => { loadGitHubManifest(); }, 1500);
@@ -1679,7 +1709,11 @@
             const token = document.getElementById('gh-token').value;
             const owner = document.getElementById('gh-owner').value;
             const repo = document.getElementById('gh-repo').value;
-            const comp = document.getElementById('match-competition').value.trim();
+
+            const compSelect = document.getElementById('match-competition-select').value;
+            const compNew = document.getElementById('match-competition-new').value.trim();
+            const comp = (compSelect === 'NEW' || !compSelect) ? compNew : compSelect;
+
             const title = document.getElementById('match-title').value.trim();
             const video = document.getElementById('match-video').value.trim();
             const xmlFile = document.getElementById('match-xml-file').files[0];
