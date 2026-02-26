@@ -1889,15 +1889,29 @@
 
             try {
                 if (match.data) {
-                    const text = await fetchExternalData(match.data);
-                    parseSportsCodeXML(text);
+                    // 데이터 패널 먼저 열기 (로딩 표시)
                     openTab('tab-data');
                     document.getElementById('sceneSidebar').classList.remove('closed');
+                    const listEl = document.getElementById('dataList');
+                    if (listEl) listEl.innerHTML = '<div style="color:#aaa; padding:15px; font-size:0.85rem;">⏳ 데이터 불러오는 중...</div>';
+                    const text = await fetchExternalData(match.data);
+                    parseSportsCodeXML(text);
                     showStatus(`${match.title} 로드 완료!`);
                 } else {
                     showStatus(`${match.title} (XML 데이터 없음)`);
+                    openTab('tab-data');
+                    document.getElementById('sceneSidebar').classList.remove('closed');
+                    const listEl = document.getElementById('dataList');
+                    if (listEl) listEl.innerHTML = '<div style="color:#aaa; padding:15px; font-size:0.85rem;">이 경기에는 XML 데이터가 없습니다.</div>';
                 }
-            } catch (err) { alert("데이터 로드 실패: " + err.message); }
+            } catch (err) {
+                // 에러를 모바일에서도 볼 수 있도록 패널에 표시
+                openTab('tab-data');
+                document.getElementById('sceneSidebar').classList.remove('closed');
+                const listEl = document.getElementById('dataList');
+                if (listEl) listEl.innerHTML = `<div style="color:#e74c3c; padding:15px; font-size:0.85rem;">❌ 데이터 로드 실패:<br>${err.message}</div>`;
+                console.error("데이터 로드 실패:", err);
+            }
         }
 
         async function fetchExternalData(url) {
@@ -2142,8 +2156,13 @@
 
         // --- 📊 데이터 분석 파싱 ---
         function parseSportsCodeXML(text) {
-            const parser = new DOMParser(); const xmlDoc = parser.parseFromString(text, "text/xml");
-            if (xmlDoc.getElementsByTagName("parsererror").length > 0) return;
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(text, "text/xml");
+            if (xmlDoc.getElementsByTagName("parsererror").length > 0) {
+                const listEl = document.getElementById('dataList');
+                if (listEl) listEl.innerHTML = '<div style="color:#e74c3c; padding:15px; font-size:0.85rem;">⚠️ XML 파싱 오류: 파일 인코딩 또는 형식을 확인해주세요.</div>';
+                return;
+            }
             const instances = xmlDoc.getElementsByTagName("instance");
             eventList = [];
             for (let i = 0; i < instances.length; i++) {
@@ -2153,6 +2172,11 @@
                 const labels = inst.getElementsByTagName("label");
                 let labelText = labels.length > 0 ? labels[0].getElementsByTagName("text")[0]?.textContent || "" : "";
                 eventList.push({ start, code, label: labelText });
+            }
+            if (eventList.length === 0) {
+                const listEl = document.getElementById('dataList');
+                if (listEl) listEl.innerHTML = '<div style="color:#aaa; padding:15px; font-size:0.85rem;">데이터가 없습니다 (instance 태그 0개).</div>';
+                return;
             }
             renderDataList();
         }
@@ -2333,7 +2357,16 @@
         function createControl(key, color) { return new fabric.Control({ position: { x: 0, y: 0 }, actionName: key, cursorStyle: 'pointer', actionHandler: function (eventData, transform, x, y) { const target = transform.target; target[key] = { x: x, y: y }; target._updateBoundingBox(); target.prevLeft = target.left; target.prevTop = target.top; return true; }, positionHandler: function (dim, finalMatrix, fabricObject) { const point = fabricObject[key]; return fabric.util.transformPoint(new fabric.Point(point.x, point.y), canvas.viewportTransform); }, render: function (ctx, left, top, styleOverride, fabricObject) { ctx.save(); ctx.translate(left, top); ctx.beginPath(); ctx.arc(0, 0, 6, 0, 2 * Math.PI); ctx.fillStyle = color; ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.fill(); ctx.stroke(); ctx.restore(); } }); }
         fabric.CurvedArrow.prototype.controls.p0 = createControl('p0', '#ffffff'); fabric.CurvedArrow.prototype.controls.p1 = createControl('p1', '#3498db'); fabric.CurvedArrow.prototype.controls.p2 = createControl('p2', '#ffffff');
 
-        function openTab(id) { document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+        function openTab(id) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            const content = document.getElementById(id);
+            if (content) content.classList.add('active');
+            // 대응하는 탭 버튼도 active 처리
+            const btnId = 'tab-btn-' + id.replace('tab-', '');
+            const btn = document.getElementById(btnId);
+            if (btn) btn.classList.add('active');
+        }
         function toggleSceneSidebar() { document.getElementById('sceneSidebar').classList.toggle('closed'); document.getElementById('sceneToggleIcon').className = document.getElementById('sceneSidebar').classList.contains('closed') ? 'fa-solid fa-chevron-left' : 'fa-solid fa-chevron-right'; setTimeout(resizeCanvas, 350); }
         function setColor(hex, el) { currentColor = hex; document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected')); el.classList.add('selected'); if (canvas && canvas.isDrawingMode) canvas.freeDrawingBrush.color = hex; }
 
