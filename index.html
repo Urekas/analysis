@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Tactical Board - v120 GitHub Manager Fixed</title>
+    <title>Tactical Board - v122 Match Manager Integration</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -10,7 +10,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Google API & GIS -->
     <script async defer src="https://apis.google.com/js/api.js"></script>
     <script async defer src="https://accounts.google.com/gsi/client"></script>
 
@@ -103,6 +102,17 @@
         .shortcut-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #333; }
         .shortcut-input { background: #111; color: var(--accent); border: 1px solid #555; padding: 5px 10px; border-radius: 5px; width: 120px; text-align: center; cursor: pointer; font-size: 0.9rem; }
         .finish-btn { color: #2ecc71; border-color: #2ecc71; display: none; } .finish-btn.show { display: flex; }
+
+        .admin-form { display: flex; flex-direction: column; gap: 12px; margin-top: 10px; }
+        .form-group { display: flex; flex-direction: column; gap: 5px; }
+        .form-input { background: #111; color: #fff; border: 1px solid #444; padding: 10px; border-radius: 8px; }
+        .btn-submit { background: var(--accent); color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .btn-submit:disabled { background: #555; cursor: not-allowed; }
+
+        /* 목록 관리 탭 버튼 CSS */
+        .manage-card { background: #333; padding: 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border: 1px solid #444; }
+        .manage-actions button { background: #444; border: none; color: white; padding: 6px 10px; border-radius: 5px; cursor: pointer; margin-left: 5px; transition: 0.2s; }
+        .manage-actions button:hover { background: var(--accent); }
 
         @media (max-width: 768px) {
             body { flex-direction: column; }
@@ -238,14 +248,16 @@
 
     <!-- GitHub 매치 센터 모달 -->
     <div class="modal-overlay" id="matchCenterModal">
-        <div class="modal-box" style="max-width: 600px;">
+        <div class="modal-box" style="max-width: 650px;">
             <button class="close-btn" onclick="closeMatchCenter()">&times;</button>
             <div class="modal-header">GitHub Match Center</div>
             <div class="modal-tabs">
                 <div class="m-tab active" id="m-tab-list" onclick="switchMatchTab('list')">대회 목록</div>
-                <div class="m-tab" id="m-tab-admin" onclick="switchMatchTab('admin')">매치 등록 (Admin)</div>
+                <div class="m-tab" id="m-tab-admin" onclick="switchMatchTab('admin')">매치 등록</div>
+                <div class="m-tab" id="m-tab-manage" onclick="switchMatchTab('manage')">목록 관리 (수정/삭제)</div>
             </div>
             
+            <!-- 리스트 보기 탭 -->
             <div id="match-view-list" class="m-content active">
                 <div id="list-nav" style="margin-bottom:15px; display:none;">
                     <button onclick="renderCompList()" style="background:#444; color:white; border:none; padding:8px 15px; border-radius:8px; cursor:pointer;"><i class="fa-solid fa-chevron-left"></i> 대회 목록으로</button>
@@ -258,6 +270,7 @@
                 </div>
             </div>
 
+            <!-- 매치 추가(Admin) 탭 -->
             <div id="match-view-admin" class="m-content">
                 <div class="admin-form">
                     <div class="form-group"><label>GitHub PAT (새로 발급받아 입력하세요)</label><input type="password" id="gh-token" class="form-input" placeholder="ghp_..."></div>
@@ -269,8 +282,35 @@
                     <div class="form-group"><label>경기 제목</label><input type="text" id="match-title" class="form-input" placeholder="인도 vs 일본"></div>
                     <div class="form-group"><label>유튜브 URL</label><input type="text" id="match-video" class="form-input" placeholder="URL 입력"></div>
                     <div class="form-group"><label>XML 데이터 파일</label><input type="file" id="match-xml-file" accept=".xml" class="form-input"></div>
-                    <button onclick="uploadMatchToGitHub()" id="btn-gh-upload" class="btn-submit">GitHub에 바로 등록하기</button>
+                    <button onclick="uploadMatchToGitHub()" id="btn-gh-upload" class="btn-submit">새 경기 등록하기</button>
                     <div id="upload-status" style="font-size:0.85rem; text-align:center; min-height:20px; margin-top:10px;"></div>
+                </div>
+            </div>
+
+            <!-- 🔥 신규: 목록 관리(Manage) 탭 -->
+            <div id="match-view-manage" class="m-content">
+                <div style="margin-bottom:10px; color:#aaa; font-size:0.85rem;">
+                    * 순서 변경(▲/▼), 수정(✏️), 삭제(🗑️) 후 반드시 하단의 <b>'변경사항 깃허브에 최종 저장'</b> 버튼을 누르세요.
+                </div>
+                <div id="manage-list-container" style="max-height: 350px; overflow-y: auto; padding-right:5px;"></div>
+                <button onclick="saveManifestToGitHub()" class="btn-submit" style="width: 100%; margin-top: 15px; background: #e67e22;"><i class="fa-solid fa-cloud-arrow-up"></i> 변경사항 깃허브에 최종 저장</button>
+                <div id="manage-status" style="font-size:0.85rem; text-align:center; min-height:20px; margin-top:10px;"></div>
+
+                <!-- 수정 폼 (숨김) -->
+                <div id="edit-match-form" style="display:none; margin-top: 20px; border-top: 1px solid #444; padding-top: 15px;">
+                    <h4 style="color:var(--accent); margin-top:0;"><i class="fa-solid fa-pen"></i> 경기 정보 수정</h4>
+                    <input type="hidden" id="edit-match-index">
+                    <div class="admin-form">
+                        <input type="text" id="edit-match-competition" class="form-input" placeholder="대회 이름">
+                        <input type="text" id="edit-match-title" class="form-input" placeholder="경기 제목">
+                        <input type="text" id="edit-match-video" class="form-input" placeholder="유튜브 URL">
+                        <label style="font-size:0.8rem; color:#aaa;">새 XML 파일 (변경할 때만 선택)</label>
+                        <input type="file" id="edit-match-xml-file" accept=".xml" class="form-input">
+                        <div style="display:flex; gap:10px; margin-top:10px;">
+                            <button onclick="applyEditMatch()" class="btn-submit" style="flex:1; background:#3498db;">수정 내용 임시 적용</button>
+                            <button onclick="cancelEditMatch()" class="btn-submit" style="flex:1; background:#555;">취소</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -289,7 +329,7 @@
                 <p>1. <b>매치 센터</b>: 깃허브 아이콘을 클릭하여 관리하세요.</p>
                 <p>2. <b>재생 컨트롤</b>: Space(재생/정지), ←/→(5초 이동)</p>
                 <p>3. <b>영상 조작</b>: 일시정지 후 '손가락 아이콘'을 누르면 유튜브 X 버튼을 직접 끌 수 있습니다.</p>
-                <p>4. <b>데이터 등록</b>: Admin 탭에서 XML을 업로드하면 목록에 자동 추가됩니다.</p>
+                <p>4. <b>매치 관리</b>: 깃허브 아이콘 內 '목록 관리' 탭에서 기존 경기를 편집 및 삭제할 수 있습니다.</p>
             </div>
             <div id="m-shortcuts" class="m-content"><div id="shortcut-list"></div><button onclick="saveShortcuts()" style="margin-top:15px; padding:10px; background:var(--accent); color:white; border:none; width:100%; border-radius:5px;">저장</button></div>
         </div>
@@ -325,7 +365,6 @@
                 });
             }
 
-            // 파일 입력 바인딩
             const vIn = document.getElementById('videoInput'); if(vIn) vIn.onchange = (e) => { const file = e.target.files[0]; if(!file) return; switchMode('local'); localVideo.src = URL.createObjectURL(file); localVideo.load(); };
             const dIn = document.getElementById('dataInput'); if(dIn) dIn.onchange = (e) => { const file = e.target.files[0]; if(!file) return; const r = new FileReader(); r.onload = (d) => { parseSportsCodeXML(d.target.result); openTab('tab-data'); }; r.readAsText(file); };
             
@@ -368,7 +407,6 @@
                     switchMode('youtube');
                     if(isYtReady && ytPlayer && ytPlayer.loadVideoById) {
                         ytPlayer.loadVideoById(ytIdMatch[1]);
-                        setTimeout(() => ytPlayer.playVideo(), 500);
                     } else {
                         showStatus("플레이어 초기화 대기 중...");
                         let checkCount = 0;
@@ -377,7 +415,6 @@
                             if (isYtReady && ytPlayer && ytPlayer.loadVideoById) {
                                 clearInterval(check);
                                 ytPlayer.loadVideoById(ytIdMatch[1]);
-                                setTimeout(() => ytPlayer.playVideo(), 500);
                             }
                             if (checkCount > 20) { clearInterval(check); showStatus("유튜브 로딩 실패. 새로고침 해주세요."); }
                         }, 500);
@@ -474,8 +511,13 @@
         function switchMatchTab(t) {
             document.getElementById('m-tab-list').className = 'm-tab' + (t==='list'?' active':'');
             document.getElementById('m-tab-admin').className = 'm-tab' + (t==='admin'?' active':'');
+            document.getElementById('m-tab-manage').className = 'm-tab' + (t==='manage'?' active':'');
+            
             document.getElementById('match-view-list').className = 'm-content' + (t==='list'?' active':'');
             document.getElementById('match-view-admin').className = 'm-content' + (t==='admin'?' active':'');
+            document.getElementById('match-view-manage').className = 'm-content' + (t==='manage'?' active':'');
+
+            if(t === 'manage') renderManageList();
         }
 
         async function loadGitHubManifest() {
@@ -530,6 +572,7 @@
             });
         }
 
+        // 🔥 URL 생성 인코딩 강화
         function getDirectLink(url) {
             if (!url) return ""; let l = url.trim();
             if (l.startsWith('./')) {
@@ -543,9 +586,153 @@
             if (l.includes("github.com") && !l.includes("raw.githubusercontent.com")) {
                 l = l.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/");
             }
-            return l;
+            return encodeURI(l);
         }
 
+        // --- 🔥 신규: 매치 목록 관리 기능 (Manage) ---
+        function renderManageList() {
+            const container = document.getElementById('manage-list-container');
+            if(!container) return;
+            container.innerHTML = '';
+            
+            githubMatchesData.forEach((match, index) => {
+                const el = document.createElement('div');
+                el.className = 'manage-card';
+                el.innerHTML = `
+                    <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+                        <span style="font-weight:bold; color:#fff; white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">${match.title}</span>
+                        <span style="font-size:0.75rem; color:#aaa;">${match.competition || '기타'}</span>
+                    </div>
+                    <div class="manage-actions" style="display:flex; align-items:center;">
+                        <button onclick="moveMatch(${index}, -1)" title="위로 올리기" ${index === 0 ? 'disabled style="opacity:0.3;"' : ''}><i class="fa-solid fa-chevron-up"></i></button>
+                        <button onclick="moveMatch(${index}, 1)" title="아래로 내리기" ${index === githubMatchesData.length-1 ? 'disabled style="opacity:0.3;"' : ''}><i class="fa-solid fa-chevron-down"></i></button>
+                        <button onclick="openEditMatch(${index})" title="수정" style="background:#3498db;"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="deleteMatch(${index})" title="삭제" style="background:#e74c3c;"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                `;
+                container.appendChild(el);
+            });
+        }
+
+        function moveMatch(index, direction) {
+            if(index + direction < 0 || index + direction >= githubMatchesData.length) return;
+            const temp = githubMatchesData[index];
+            githubMatchesData[index] = githubMatchesData[index + direction];
+            githubMatchesData[index + direction] = temp;
+            renderManageList();
+            document.getElementById('manage-status').innerText = "순서가 변경되었습니다. (저장을 눌러야 깃허브에 반영됩니다)";
+        }
+
+        function deleteMatch(index) {
+            if(confirm("이 경기를 목록에서 삭제하시겠습니까?\n(최종 저장 시 깃허브에 반영됩니다)")) {
+                githubMatchesData.splice(index, 1);
+                renderManageList();
+                cancelEditMatch();
+                document.getElementById('manage-status').innerText = "목록에서 삭제되었습니다. (저장을 눌러야 깃허브에 반영됩니다)";
+            }
+        }
+
+        function openEditMatch(index) {
+            const match = githubMatchesData[index];
+            document.getElementById('edit-match-index').value = index;
+            document.getElementById('edit-match-competition').value = match.competition || "";
+            document.getElementById('edit-match-title').value = match.title || "";
+            document.getElementById('edit-match-video').value = match.video || "";
+            document.getElementById('edit-match-xml-file').value = ""; 
+            document.getElementById('edit-match-form').style.display = 'block';
+            document.getElementById('edit-match-form').scrollIntoView({behavior: 'smooth'});
+        }
+
+        function cancelEditMatch() {
+            document.getElementById('edit-match-form').style.display = 'none';
+        }
+
+        async function applyEditMatch() {
+            const index = document.getElementById('edit-match-index').value;
+            const comp = document.getElementById('edit-match-competition').value.trim();
+            const title = document.getElementById('edit-match-title').value.trim();
+            const video = document.getElementById('edit-match-video').value.trim();
+            const xmlFile = document.getElementById('edit-match-xml-file').files[0];
+            const status = document.getElementById('manage-status');
+            
+            if(!comp || !title || !video) { alert("대회명, 제목, 영상 URL은 필수입니다."); return; }
+
+            saveAdminConfig();
+            const token = document.getElementById('gh-token').value;
+            const owner = document.getElementById('gh-owner').value;
+            const repo = document.getElementById('gh-repo').value;
+
+            let dataPath = githubMatchesData[index].data; 
+
+            // 새 XML을 업로드 한 경우 즉시 깃허브에 반영 (데이터 덮어쓰기)
+            if (xmlFile) {
+                if (!token || !owner || !repo) { alert("XML을 업로드하려면 Admin 탭에 PAT 정보가 있어야 합니다."); return; }
+                status.innerHTML = `<span style="color:#3498db;">새로운 XML 파일 깃허브에 업로드 중...</span>`;
+                try {
+                    const xmlBase64 = await new Promise((res, rej) => { 
+                        const r = new FileReader(); r.onload = () => res(r.result.split(',')[1]); r.onerror=rej; r.readAsDataURL(xmlFile); 
+                    });
+                    
+                    const xmlPath = `data/${comp}/${title}_${Date.now()}.xml`; 
+                    const upRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${encodeURI(xmlPath)}`, {
+                        method: 'PUT', headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: `Update match XML: ${title}`, content: xmlBase64 })
+                    });
+
+                    if (!upRes.ok) throw new Error("새 XML 업로드 실패");
+                    dataPath = `./${xmlPath}`;
+                } catch(e) {
+                    status.innerHTML = `<span style="color:#e74c3c;">XML 변경 오류: ${e.message}</span>`;
+                    return;
+                }
+            }
+
+            githubMatchesData[index] = {
+                title: title, competition: comp, video: video, data: dataPath,
+                date: githubMatchesData[index].date || new Date().toISOString().split('T')[0]
+            };
+
+            renderManageList();
+            cancelEditMatch();
+            status.innerHTML = `<span style="color:#f1c40f;">수정 내용이 목록에 적용되었습니다. 하단의 '최종 저장'을 반드시 누르세요!</span>`;
+        }
+
+        async function saveManifestToGitHub() {
+            const token = document.getElementById('gh-token').value;
+            const owner = document.getElementById('gh-owner').value;
+            const repo = document.getElementById('gh-repo').value;
+            const status = document.getElementById('manage-status');
+
+            if (!token || !owner || !repo) { alert("GitHub PAT, ID, Repo 정보가 필요합니다. (Admin 탭 확인)"); return; }
+            status.innerHTML = `변경사항을 깃허브에 저장 중...`;
+
+            try {
+                const manifestRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/matches.json`, { headers: { 'Authorization': `token ${token}` } });
+                if(!manifestRes.ok) throw new Error("matches.json 정보를 가져오지 못했습니다.");
+                const manifestData = await manifestRes.json();
+                
+                const manifestObj = { matches: githubMatchesData };
+                const jsonString = JSON.stringify(manifestObj, null, 2);
+                
+                const encodedBytes = new TextEncoder().encode(jsonString);
+                let binStr = ""; for(let i=0; i<encodedBytes.length; i++) binStr += String.fromCharCode(encodedBytes[i]);
+                const updatedJsonB64 = window.btoa(binStr);
+
+                const finalUpRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/matches.json`, {
+                    method: 'PUT', headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: `Update matches list (Manage)`, content: updatedJsonB64, sha: manifestData.sha })
+                });
+
+                if (!finalUpRes.ok) throw new Error(`업데이트 실패`);
+                
+                status.innerHTML = `<span style="color:#2ecc71;">성공적으로 깃허브에 완벽히 저장되었습니다!</span>`;
+                setTimeout(() => { loadGitHubManifest(); }, 1500);
+            } catch(e) {
+                status.innerHTML = `<span style="color:#e74c3c;">저장 오류: ${e.message}</span>`;
+            }
+        }
+
+        // --- 기존 추가 로직들 ---
         async function fetchExternalData(url) {
             const token = document.getElementById('gh-token').value;
             const finalUrl = getDirectLink(url);
@@ -555,7 +742,7 @@
                 if (response.ok) { const text = await response.text(); if (!text.includes("<html") && !text.trim().startsWith("<!doctype")) return text; }
                 const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(finalUrl);
                 const proxyRes = await fetch(proxyUrl); return await proxyRes.text();
-            } catch (e) { throw new Error("로드 실패"); }
+            } catch (e) { throw new Error("로드 실패: " + e.message); }
         }
 
         async function uploadMatchToGitHub() {
@@ -574,68 +761,42 @@
             btn.disabled = true; status.innerHTML = `업로드 중...`;
 
             try {
-                // 1. 기존 XML 존재 여부 확인 (덮어쓰기를 위한 SHA 확보)
                 const xmlPath = `data/${comp}/${title}.xml`;
                 let xmlSha = null;
-                const checkRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${xmlPath}`, { headers: { 'Authorization': `token ${token}` } });
+                const checkRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${encodeURI(xmlPath)}`, { headers: { 'Authorization': `token ${token}` } });
                 if(checkRes.ok) { const data = await checkRes.json(); xmlSha = data.sha; }
 
-                // 2. XML 파일 Base64 변환 (readAsDataURL 사용 - 인코딩 오류 원천 차단)
                 const xmlBase64 = await new Promise((res, rej) => { 
-                    const r = new FileReader(); 
-                    r.onload = () => {
-                        const base64String = r.result.split(',')[1];
-                        res(base64String);
-                    };
-                    r.onerror = () => rej(new Error("파일 읽기 실패"));
-                    r.readAsDataURL(xmlFile); 
+                    const r = new FileReader(); r.onload = () => res(r.result.split(',')[1]); r.onerror = rej; r.readAsDataURL(xmlFile); 
                 });
                 
                 const upBody = { message: `Add/Update data: ${title}`, content: xmlBase64 };
                 if(xmlSha) upBody.sha = xmlSha;
 
-                const upRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${xmlPath}`, {
+                const upRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${encodeURI(xmlPath)}`, {
                     method: 'PUT', headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
                     body: JSON.stringify(upBody)
                 });
-                if (!upRes.ok) {
-                    const errData = await upRes.json();
-                    throw new Error(`XML 업로드 실패: ${errData.message}`);
-                }
+                if (!upRes.ok) { const errData = await upRes.json(); throw new Error(`XML 업로드 실패: ${errData.message}`); }
 
-                // 3. matches.json 업데이트 처리
                 const manifestRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/matches.json`, { headers: { 'Authorization': `token ${token}` } });
-                
-                let manifestObj = { matches: [] };
-                let manifestSha = null;
+                let manifestObj = { matches: [] }; let manifestSha = null;
 
                 if (manifestRes.ok) {
                     const manifestData = await manifestRes.json();
                     manifestSha = manifestData.sha;
                     const contentClean = manifestData.content.replace(/\s/g, "");
-                    // 안전한 UTF-8 Base64 디코딩 (한글 깨짐 및 atob 에러 해결)
                     const bytes = new Uint8Array(window.atob(contentClean).split('').map(c => c.charCodeAt(0)));
-                    const decodedText = new TextDecoder("utf-8").decode(bytes);
-                    manifestObj = JSON.parse(decodedText);
+                    manifestObj = JSON.parse(new TextDecoder("utf-8").decode(bytes));
                 }
 
-                // 중복 체크 로직 (이미 같은 매치가 있다면 덮어쓰기)
                 const existingIndex = manifestObj.matches.findIndex(m => m.title === title && m.competition === comp);
                 const newMatchData = { title, competition: comp, video, data: `./${xmlPath}`, date: new Date().toISOString().split('T')[0] };
-                
-                if (existingIndex !== -1) {
-                    manifestObj.matches[existingIndex] = newMatchData;
-                } else {
-                    manifestObj.matches.push(newMatchData);
-                }
+                if (existingIndex !== -1) manifestObj.matches[existingIndex] = newMatchData; else manifestObj.matches.push(newMatchData);
 
-                // 안전한 UTF-8 Base64 인코딩
                 const jsonString = JSON.stringify(manifestObj, null, 2);
                 const encodedBytes = new TextEncoder().encode(jsonString);
-                let binStr = "";
-                for(let i=0; i<encodedBytes.length; i++) {
-                    binStr += String.fromCharCode(encodedBytes[i]);
-                }
+                let binStr = ""; for(let i=0; i<encodedBytes.length; i++) binStr += String.fromCharCode(encodedBytes[i]);
                 const updatedJsonB64 = window.btoa(binStr);
 
                 const manifestUpBody = { message: `Update manifest: ${title}`, content: updatedJsonB64 };
@@ -646,33 +807,12 @@
                     body: JSON.stringify(manifestUpBody)
                 });
 
-                if (!finalUpRes.ok) {
-                    const errData = await finalUpRes.json();
-                    throw new Error(`목록 업데이트 실패: ${errData.message}`);
-                }
+                if (!finalUpRes.ok) { const errData = await finalUpRes.json(); throw new Error(`목록 업데이트 실패: ${errData.message}`); }
 
                 status.innerHTML = `<span style="color:#2ecc71;">성공적으로 업로드되었습니다!</span>`;
                 setTimeout(() => { switchMatchTab('list'); loadGitHubManifest(); }, 1500);
-            } catch (e) { 
-                status.innerHTML = `<span style="color:#e74c3c;">오류: ${e.message}</span>`; 
-            } finally {
-                btn.disabled = false;
-            }
+            } catch (e) { status.innerHTML = `<span style="color:#e74c3c;">오류: ${e.message}</span>`; } finally { btn.disabled = false; }
         }
-
-        async function selectMatch(match) {
-            closeMatchCenter(); showStatus(`${match.title} 로드 중...`, true);
-            const ytMatch = match.video.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([^"&?\/\s]{11})/i);
-            if (ytMatch) { switchMode('youtube'); if(isYtReady && ytPlayer && ytPlayer.loadVideoById) ytPlayer.loadVideoById(ytMatch[1]); }
-            else { switchMode('local'); localVideo.src = match.video; localVideo.load(); }
-            try {
-                const text = await fetchExternalData(match.data);
-                parseSportsCodeXML(text); openTab('tab-data'); showStatus(`${match.title} 로드 완료!`);
-            } catch (err) { alert("데이터 로드 실패"); }
-        }
-
-        function loadAdminConfig() { const saved = localStorage.getItem('gh_admin_config'); if (saved) { const cfg = JSON.parse(saved); if(cfg.token) document.getElementById('gh-token').value = cfg.token; if(cfg.owner) document.getElementById('gh-owner').value = cfg.owner; if(cfg.repo) document.getElementById('gh-repo').value = cfg.repo; } }
-        function saveAdminConfig() { const cfg = { token: document.getElementById('gh-token').value, owner: document.getElementById('gh-owner').value, repo: document.getElementById('gh-repo').value }; localStorage.setItem('gh_admin_config', JSON.stringify(cfg)); }
 
         // --- 🎨 드로잉 모드 및 공통 유틸 ---
         function setMode(mode){
@@ -690,6 +830,33 @@
             document.getElementById('guide-msg').style.display = (mode === 'drawPolyline' || mode === 'drawPolygon') ? 'block' : 'none';
             resetDrawing();
         }
+
+        canvas.on('mouse:down', function(o) {
+            if (isPalmRejection && o.e && (o.e.pointerType === 'touch' || o.e.touches)) return;
+            if(currentMode === 'select' || currentMode === 'drawPen' || !o.e) return;
+            const p = canvas.getPointer(o.e);
+            if(currentMode === 'drawPlayerTag') {
+                const fs = Math.max(16, currentSize * 0.7); const isR = (p.x > canvas.width/2); const dir = isR ? -1 : 1;
+                const text = new fabric.IText('PLAYER', { fontSize: fs, fill: currentColor, fontFamily: 'S-CoreDream-6Bold', originX: isR?'right':'left', originY: 'bottom', top: 4 });
+                const line = new fabric.Path([['M', -dir * 18, 28], ['L', 0, 0], ['L', dir * (text.width + 5), 0]], { fill: '', stroke: currentColor, strokeWidth: 3, selectable: false });
+                const tag = new fabric.Group([line, text], { left: p.x, top: p.y, originX: isR?'right':'left', originY: 'top', isPlayerTag: true, selectable: true });
+                canvas.add(tag); setMode('select');
+            } else if(currentMode === 'drawSpot') {
+                canvas.add(new fabric.Ellipse({ left: p.x, top: p.y, rx: currentSize, ry: currentSize*0.4, fill: hexToMutedRgba(currentColor, currentOpacity), stroke: currentColor, strokeWidth: 3, originX: 'center', originY: 'center', shadow: new fabric.Shadow({color:currentColor, blur:20}) }));
+            } else if(currentMode === 'drawArrow' || currentMode === 'drawCurve') {
+                isDrawing = true; startPoint = p;
+                activeObj = new fabric.Line([p.x, p.y, p.x, p.y], { stroke: currentColor, strokeWidth: 2, strokeDashArray: [5,5], selectable: false });
+                canvas.add(activeObj);
+            } else if(currentMode === 'drawPolyline' || currentMode === 'drawPolygon') {
+                const c = new fabric.Circle({radius:4, fill:currentColor, left:p.x, top:p.y, originX:'center', originY:'center', selectable:false});
+                activePoints.push(c); pointArray.push({x:p.x,y:p.y}); componentArray.push(c); canvas.add(c);
+                if(pointArray.length > 1) {
+                    const l = new fabric.Line([pointArray[pointArray.length-2].x, pointArray[pointArray.length-2].y, p.x, p.y], { stroke: currentColor, strokeWidth: 2, selectable: false });
+                    activeLines.push(l); componentArray.push(l); canvas.add(l);
+                }
+                document.getElementById('btn-finish').classList.add('show');
+            }
+        });
 
         // --- 📊 데이터 분석 파싱 ---
         function parseSportsCodeXML(text) {
@@ -758,18 +925,6 @@
             else if (key === 'ArrowRight') { e.preventDefault(); videoControl('forward'); }
         });
 
-        function completeDrawing() { 
-            if(pointArray.length < 2) { resetDrawing(); return; }
-            if(currentMode === 'drawPolyline') {
-                const group = new fabric.Group([...componentArray], { selectable: true, shadow: broadcastShadow });
-                componentArray.forEach(o => canvas.remove(o)); canvas.add(group); canvas.setActiveObject(group);
-            } else if(currentMode === 'drawPolygon') {
-                const poly = new fabric.Polygon(pointArray, { fill: hexToMutedRgba(currentColor, currentOpacity), stroke: currentColor, strokeWidth: 2 });
-                activePoints.forEach(p => canvas.remove(p)); activeLines.forEach(l => canvas.remove(l)); canvas.add(poly);
-            }
-            resetDrawing(); setMode('select'); 
-        }
-
         // --- 기타 유틸리티 ---
         function startCleanRecording() { alert("추출 기능이 활성화되었습니다. 브라우저 캡처 권한을 허용해 주세요."); }
         function saveShortcuts() { alert("저장되었습니다."); toggleHelp(); }
@@ -787,18 +942,10 @@
         function togglePalm() { isPalmRejection = !isPalmRejection; document.getElementById('btn-palm').classList.toggle('active'); }
         function switchModalTab(t) { document.getElementById('m-guide').classList.toggle('active', t==='guide'); document.getElementById('m-shortcuts').classList.toggle('active', t==='shortcuts'); if(t==='shortcuts') initShortcuts(); }
         function showStatus(m, rec=false) { const el = document.getElementById('status-msg'); el.innerText = m; el.style.display = 'block'; if(!rec) setTimeout(()=>el.style.display='none', 3000); }
-        function saveScene() {
-            if(!canvas) return;
-            const art = JSON.stringify(canvas.toJSON());
-            let t = 0; if(currentMediaType==='local') t=localVideo.currentTime; else if(isYtReady) t=ytPlayer.getCurrentTime();
-            const item = document.createElement('div'); item.className='scene-item';
-            item.innerHTML=`<div class="scene-info"><span>Scene ${document.getElementById('sceneList').children.length+1}</span><span class="scene-time">${formatTime(t)}</span></div><button class="scene-del-btn" onclick="this.parentElement.remove()">×</button>`;
-            item.onclick=(e)=>{ if(e.target.tagName!=='BUTTON') canvas.loadFromJSON(art, canvas.renderAll.bind(canvas)); };
-            document.getElementById('sceneList').appendChild(item);
-        }
-        function createCurvedArrow(s, e) { const mid = { x: (s.x+e.x)/2, y: (s.y+e.y)/2-50 }; canvas.add(new fabric.CurvedArrow(s, mid, e, { stroke: currentColor, strokeWidth: 4, headSize: currentSize })); }
-        function addText() { if(!canvas) return; const t = new fabric.IText('텍스트', { left: canvas.width/2, top: canvas.height/2, fill: currentColor, fontFamily: 'S-CoreDream-6Bold', fontSize: 30 }); canvas.add(t); canvas.setActiveObject(t); }
+        function loadAdminConfig() { const saved = localStorage.getItem('gh_admin_config'); if (saved) { const cfg = JSON.parse(saved); if(cfg.token) document.getElementById('gh-token').value = cfg.token; if(cfg.owner) document.getElementById('gh-owner').value = cfg.owner; if(cfg.repo) document.getElementById('gh-repo').value = cfg.repo; } }
+        function saveAdminConfig() { const cfg = { token: document.getElementById('gh-token').value, owner: document.getElementById('gh-owner').value, repo: document.getElementById('gh-repo').value }; localStorage.setItem('gh_admin_config', JSON.stringify(cfg)); }
         function toggleLang() { }
+        function addText() { if(!canvas) return; const t = new fabric.IText('텍스트', { left: canvas.width/2, top: canvas.height/2, fill: currentColor, fontFamily: 'S-CoreDream-6Bold', fontSize: 30 }); canvas.add(t); canvas.setActiveObject(t); }
     </script>
 </body>
 </html>
