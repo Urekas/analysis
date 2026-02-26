@@ -1021,10 +1021,12 @@
         <div class="top-menu">
             <button class="top-btn mobile-only" onclick="openMatchCenter()" style="color:var(--accent);"
                 title="GitHub 매치 센터"><i class="fa-brands fa-github"></i></button>
-            <label for="videoInput" class="top-btn mobile-only" style="color:#3498db; cursor:pointer;"
+            <label for="videoInputMobile" class="top-btn mobile-only" style="color:#3498db; cursor:pointer;"
                 title="로컬 영상 열기"><i class="fa-solid fa-file-video"></i></label>
-            <label for="dataInput" class="top-btn mobile-only" style="color:#9b59b6; cursor:pointer;"
+            <input type="file" id="videoInputMobile" style="display:none;" accept="video/*">
+            <label for="dataInputMobile" class="top-btn mobile-only" style="color:#9b59b6; cursor:pointer;"
                 title="데이터(XML) 열기"><i class="fa-solid fa-file-lines"></i></label>
+            <input type="file" id="dataInputMobile" style="display:none;" accept=".xml,.csv">
             <button class="top-btn" onclick="toggleLang()">KR | EN</button>
             <button class="top-btn" onclick="toggleHelp()"><i class="fa-solid fa-gear"></i> 설정</button>
         </div>
@@ -1258,35 +1260,43 @@
             }
 
             // 파일 입력 핸들러 추가
-            const vIn = document.getElementById('videoInput');
-            if (vIn) vIn.addEventListener('change', (e) => {
+            const handleVideoInput = (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
                 switchMode('local');
                 const localVideo = document.getElementById('local-video');
                 localVideo.src = URL.createObjectURL(file);
                 localVideo.load();
-
-                // 메타데이터 로드 즉시 길이 표시 강제 갱신
                 localVideo.onloadedmetadata = () => {
                     const dur = localVideo.duration || 0;
-                    if (isFinite(dur)) {
-                        document.getElementById('timeDisplay').innerText = `0:00 / ${formatTime(dur)}`;
-                    }
+                    if (isFinite(dur)) { document.getElementById('timeDisplay').innerText = `0:00 / ${formatTime(dur)}`; }
                 };
-
                 localVideo.play();
-                e.target.value = null; // 재선택 가능하게
-            });
+                e.target.value = null;
+            };
 
-            const dIn = document.getElementById('dataInput');
-            if (dIn) dIn.addEventListener('change', (e) => {
+            const handleDataInput = (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
                 const r = new FileReader();
-                r.onload = (d) => { parseSportsCodeXML(d.target.result); openTab('tab-data'); };
+                r.onload = (evt) => {
+                    parseSportsCodeXML(evt.target.result);
+                    openTab('tab-data');
+                    document.getElementById('sceneSidebar').classList.remove('closed'); // Ensure it opens on mobile
+                };
                 r.readAsText(file);
-            });
+                e.target.value = null; // 재선택 가능하게
+            };
+
+            const vIn = document.getElementById('videoInput');
+            if (vIn) vIn.addEventListener('change', handleVideoInput);
+            const vInM = document.getElementById('videoInputMobile');
+            if (vInM) vInM.addEventListener('change', handleVideoInput);
+
+            const dIn = document.getElementById('dataInput');
+            if (dIn) dIn.addEventListener('change', handleDataInput);
+            const dInM = document.getElementById('dataInputMobile');
+            if (dInM) dInM.addEventListener('change', handleDataInput);
 
             setTimeout(resizeCanvas, 500);
             initShortcuts();
