@@ -2144,7 +2144,8 @@
         function parseSportsCodeXML(text) {
             const parser = new DOMParser(); const xmlDoc = parser.parseFromString(text, "text/xml");
             if (xmlDoc.getElementsByTagName("parsererror").length > 0) return;
-            const instances = xmlDoc.getElementsByTagName("instance"); eventList = [];
+            const instances = xmlDoc.getElementsByTagName("instance");
+            eventList = [];
             for (let i = 0; i < instances.length; i++) {
                 const inst = instances[i];
                 const start = parseFloat(inst.getElementsByTagName("start")[0]?.textContent || 0);
@@ -2172,16 +2173,18 @@
                 const header = document.createElement('div'); header.className = 'data-group-header';
                 header.innerHTML = `<i class="fa-solid fa-chevron-right group-toggle-icon"></i><span>${code}</span><span class="group-count">${items.length}</span>`;
                 const content = document.createElement('div'); content.className = 'data-group-content';
-                header.onclick = () => {
+                header.addEventListener('click', () => {
                     const isHidden = content.style.display === 'none' || content.style.display === '';
                     content.style.display = isHidden ? 'flex' : 'none';
                     header.querySelector('.group-toggle-icon').className = isHidden ? 'fa-solid fa-chevron-down group-toggle-icon' : 'fa-solid fa-chevron-right group-toggle-icon';
-                };
+                });
                 items.forEach(it => {
                     const item = document.createElement('div'); item.className = 'data-item';
                     let t = it.start; if (unit === 'ms') t /= 1000;
                     item.innerHTML = `<span>${it.label || '-'}</span><span class="scene-time">${formatTime(t)}</span>`;
-                    item.onclick = () => jumpToTime(t); content.appendChild(item);
+                    item.addEventListener('click', () => jumpToTime(t));
+                    item.addEventListener('touchstart', (e) => { e.preventDefault(); jumpToTime(t); }, { passive: false });
+                    content.appendChild(item);
                 });
                 group.appendChild(header); group.appendChild(content); listEl.appendChild(group);
             }
@@ -2342,8 +2345,26 @@
             const art = JSON.stringify(canvas.toJSON());
             let t = 0; if (currentMediaType === 'local') t = document.getElementById('local-video').currentTime; else if (isYtReady) t = ytPlayer.getCurrentTime();
             const item = document.createElement('div'); item.className = 'scene-item';
-            item.innerHTML = `<div class="scene-info"><span>Scene ${document.getElementById('sceneList').children.length + 1}</span><span class="scene-time">${formatTime(t)}</span></div><button class="scene-del-btn" onclick="this.parentElement.remove()">×</button>`;
-            item.onclick = (e) => { if (e.target.tagName !== 'BUTTON') canvas.loadFromJSON(art, canvas.renderAll.bind(canvas)); };
+            item.innerHTML = `<div class="scene-info"><span>Scene ${document.getElementById('sceneList').children.length + 1}</span><span class="scene-time">${formatTime(t)}</span></div><button class="scene-del-btn">×</button>`;
+
+            item.addEventListener('click', (e) => {
+                if (e.target.tagName !== 'BUTTON') {
+                    canvas.loadFromJSON(art, canvas.renderAll.bind(canvas));
+                    jumpToTime(t);
+                }
+            });
+            item.addEventListener('touchstart', (e) => {
+                if (e.target.tagName !== 'BUTTON') {
+                    e.preventDefault();
+                    canvas.loadFromJSON(art, canvas.renderAll.bind(canvas));
+                    jumpToTime(t);
+                }
+            }, { passive: false });
+
+            item.querySelector('.scene-del-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                item.remove();
+            });
             document.getElementById('sceneList').appendChild(item);
         }
         function loadAdminConfig() { const saved = localStorage.getItem('gh_admin_config'); if (saved) { const cfg = JSON.parse(saved); if (cfg.token) document.getElementById('gh-token').value = cfg.token; if (cfg.owner) document.getElementById('gh-owner').value = cfg.owner; if (cfg.repo) document.getElementById('gh-repo').value = cfg.repo; } }
