@@ -2,14 +2,14 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Tactical Board - v122 Match Manager Integration</title>
+    <title>Tactical Board - v123 Click Bug Fixed</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-j
+    
     <script async defer src="https://apis.google.com/js/api.js"></script>
     <script async defer src="https://accounts.google.com/gsi/client"></script>
 
@@ -270,7 +270,7 @@ j
                 <div id="match-loading" style="text-align:center; padding:20px; color:#aaa;">로딩 중...</div>
                 <div class="match-list" id="match-list-container"></div>
                 <div style="margin-top:20px; border-top:1px solid #444; padding-top:15px;">
-                    <input type="text" id="manifest-url" style="width:100%; background:#111; color:#fff; border:1px solid #555; padding:10px; border-radius:8px;" value="matches.json">
+                    <input type="text" id="manifest-url" style="width:100%; background:#111; color:#fff; border:1px solid #555; padding:10px; border-radius:8px;" value="https://raw.githubusercontent.com/Urekas/analysis/main/matches.json">
                     <button onclick="loadGitHubManifest()" style="margin-top:10px; width:100%; padding:10px; background:var(--accent); color:white; border:none; cursor:pointer; font-weight:bold; border-radius:8px;">목록 동기화</button>
                 </div>
             </div>
@@ -292,7 +292,7 @@ j
                 </div>
             </div>
 
-            <!-- 🔥 신규: 목록 관리(Manage) 탭 -->
+            <!-- 목록 관리(Manage) 탭 -->
             <div id="match-view-manage" class="m-content">
                 <div style="margin-bottom:10px; color:#aaa; font-size:0.85rem;">
                     * 순서 변경(▲/▼), 수정(✏️), 삭제(🗑️) 후 반드시 하단의 <b>'변경사항 깃허브에 최종 저장'</b> 버튼을 누르세요.
@@ -301,7 +301,7 @@ j
                 <button onclick="saveManifestToGitHub()" class="btn-submit" style="width: 100%; margin-top: 15px; background: #e67e22;"><i class="fa-solid fa-cloud-arrow-up"></i> 변경사항 깃허브에 최종 저장</button>
                 <div id="manage-status" style="font-size:0.85rem; text-align:center; min-height:20px; margin-top:10px;"></div>
 
-                <!-- 수정 폼 (숨김) -->
+                <!-- 수정 폼 -->
                 <div id="edit-match-form" style="display:none; margin-top: 20px; border-top: 1px solid #444; padding-top: 15px;">
                     <h4 style="color:var(--accent); margin-top:0;"><i class="fa-solid fa-pen"></i> 경기 정보 수정</h4>
                     <input type="hidden" id="edit-match-index">
@@ -410,6 +410,7 @@ j
                 const ytIdMatch = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([^"&?\/\s]{11})/i);
                 if(ytIdMatch && ytIdMatch[1]) {
                     switchMode('youtube');
+                    // 🔥 영상 클릭 오작동 방지: 재시도 로직 보강
                     if(isYtReady && ytPlayer && ytPlayer.loadVideoById) {
                         ytPlayer.loadVideoById(ytIdMatch[1]);
                     } else {
@@ -577,7 +578,6 @@ j
             });
         }
 
-        // 🔥 URL 생성 인코딩 강화
         function getDirectLink(url) {
             if (!url) return ""; let l = url.trim();
             if (l.startsWith('./')) {
@@ -790,7 +790,50 @@ j
             }
         }
 
-        // --- 기존 추가 로직들 ---
+        // --- 🎥 경기 클릭시 매치 로드 동작 로직 (Silent Error 방지) ---
+        async function selectMatch(match) {
+            closeMatchCenter(); showStatus(`${match.title} 로드 중...`, true);
+            
+            // 비디오 URL 누락 등 오류 대응 안전장치 추가
+            const videoUrl = match.video || "";
+            const ytMatch = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([^"&?\/\s]{11})/i);
+            
+            if (ytMatch) { 
+                switchMode('youtube'); 
+                if(isYtReady && ytPlayer && ytPlayer.loadVideoById) {
+                    ytPlayer.loadVideoById(ytMatch[1]); 
+                } else {
+                    let checkCount = 0;
+                    const check = setInterval(() => {
+                        checkCount++;
+                        if (isYtReady && ytPlayer && ytPlayer.loadVideoById) {
+                            clearInterval(check);
+                            ytPlayer.loadVideoById(ytMatch[1]);
+                        }
+                        if (checkCount > 20) clearInterval(check);
+                    }, 500);
+                }
+            } else if (videoUrl) { 
+                switchMode('local'); 
+                localVideo.src = videoUrl; 
+                localVideo.load(); 
+            } else {
+                switchMode('none');
+                showStatus(`영상 링크가 비어있습니다.`);
+            }
+
+            try {
+                if (match.data) {
+                    const text = await fetchExternalData(match.data);
+                    parseSportsCodeXML(text); 
+                    openTab('tab-data'); 
+                    showStatus(`${match.title} 로드 완료!`);
+                } else {
+                    showStatus(`${match.title} (XML 데이터 없음)`);
+                }
+            } catch (err) { alert("데이터 로드 실패: " + err.message); }
+        }
+
         async function fetchExternalData(url) {
             const token = document.getElementById('gh-token').value;
             const finalUrl = getDirectLink(url);
@@ -916,6 +959,21 @@ j
             }
         });
 
+        canvas.on('mouse:move', o => { if(isDrawing && activeObj) { const p = canvas.getPointer(o.e); activeObj.set({ x2: p.x, y2: p.y }); canvas.renderAll(); }});
+        canvas.on('mouse:up', o => {
+            if(isDrawing) {
+                isDrawing = false; const p = canvas.getPointer(o.e); canvas.remove(activeObj);
+                if(currentMode === 'drawArrow') {
+                    const h = currentSize, a = Math.atan2(p.y-startPoint.y, p.x-startPoint.x)*180/Math.PI;
+                    const l = Math.sqrt(Math.pow(p.x-startPoint.x,2)+Math.pow(p.y-startPoint.y,2));
+                    const line = new fabric.Path(`M ${-l/2} 0 L ${l/2-h+5} 0`, { stroke:currentColor, strokeWidth:4, fill:'', originX:'center', originY:'center' });
+                    const head = new fabric.Triangle({ width:h, height:h, fill:currentColor, angle:90, left:l/2, top:0, originX:'center', originY:'center' });
+                    canvas.add(new fabric.Group([line, head], { left: (startPoint.x+p.x)/2, top: (startPoint.y+p.y)/2, angle: a, originX: 'center', originY: 'center', shadow: broadcastShadow }));
+                } else createCurvedArrow(startPoint, p);
+                setMode('select');
+            }
+        });
+
         // --- 📊 데이터 분석 파싱 ---
         function parseSportsCodeXML(text) {
             const parser = new DOMParser(); const xmlDoc = parser.parseFromString(text, "text/xml");
@@ -983,6 +1041,18 @@ j
             else if (key === 'ArrowRight') { e.preventDefault(); videoControl('forward'); }
         });
 
+        function completeDrawing() { 
+            if(pointArray.length < 2) { resetDrawing(); return; }
+            if(currentMode === 'drawPolyline') {
+                const group = new fabric.Group([...componentArray], { selectable: true, shadow: broadcastShadow });
+                componentArray.forEach(o => canvas.remove(o)); canvas.add(group); canvas.setActiveObject(group);
+            } else if(currentMode === 'drawPolygon') {
+                const poly = new fabric.Polygon(pointArray, { fill: hexToMutedRgba(currentColor, currentOpacity), stroke: currentColor, strokeWidth: 2 });
+                activePoints.forEach(p => canvas.remove(p)); activeLines.forEach(l => canvas.remove(l)); canvas.add(poly);
+            }
+            resetDrawing(); setMode('select'); 
+        }
+
         // --- 기타 유틸리티 ---
         function startCleanRecording() { alert("추출 기능이 활성화되었습니다. 브라우저 캡처 권한을 허용해 주세요."); }
         function saveShortcuts() { alert("저장되었습니다."); toggleHelp(); }
@@ -1000,6 +1070,15 @@ j
         function togglePalm() { isPalmRejection = !isPalmRejection; document.getElementById('btn-palm').classList.toggle('active'); }
         function switchModalTab(t) { document.getElementById('m-guide').classList.toggle('active', t==='guide'); document.getElementById('m-shortcuts').classList.toggle('active', t==='shortcuts'); if(t==='shortcuts') initShortcuts(); }
         function showStatus(m, rec=false) { const el = document.getElementById('status-msg'); el.innerText = m; el.style.display = 'block'; if(!rec) setTimeout(()=>el.style.display='none', 3000); }
+        function saveScene() {
+            if(!canvas) return;
+            const art = JSON.stringify(canvas.toJSON());
+            let t = 0; if(currentMediaType==='local') t=localVideo.currentTime; else if(isYtReady) t=ytPlayer.getCurrentTime();
+            const item = document.createElement('div'); item.className='scene-item';
+            item.innerHTML=`<div class="scene-info"><span>Scene ${document.getElementById('sceneList').children.length+1}</span><span class="scene-time">${formatTime(t)}</span></div><button class="scene-del-btn" onclick="this.parentElement.remove()">×</button>`;
+            item.onclick=(e)=>{ if(e.target.tagName!=='BUTTON') canvas.loadFromJSON(art, canvas.renderAll.bind(canvas)); };
+            document.getElementById('sceneList').appendChild(item);
+        }
         function loadAdminConfig() { const saved = localStorage.getItem('gh_admin_config'); if (saved) { const cfg = JSON.parse(saved); if(cfg.token) document.getElementById('gh-token').value = cfg.token; if(cfg.owner) document.getElementById('gh-owner').value = cfg.owner; if(cfg.repo) document.getElementById('gh-repo').value = cfg.repo; } }
         function saveAdminConfig() { const cfg = { token: document.getElementById('gh-token').value, owner: document.getElementById('gh-owner').value, repo: document.getElementById('gh-repo').value }; localStorage.setItem('gh_admin_config', JSON.stringify(cfg)); }
         function toggleLang() { }
@@ -1007,4 +1086,3 @@ j
     </script>
 </body>
 </html>
-
