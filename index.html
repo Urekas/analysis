@@ -114,7 +114,7 @@
     </style>
 </head>
 <body>
-    <!-- 🚀 전역 변수 선언부 (ReferenceError 방지) -->
+    <!-- 🚀 전역 변수 선언부 -->
     <script>
         let canvas, ytPlayer, broadcastShadow;
         let isYtReady = false, currentMediaType = 'none', eventList = [], timeOffset = 0.0;
@@ -125,7 +125,6 @@
         window.addEventListener('DOMContentLoaded', () => {
             if (typeof fabric !== 'undefined') {
                 broadcastShadow = new fabric.Shadow({ color: 'rgba(0,0,0,0.8)', blur: 8, offsetX: 2, offsetY: 2 });
-                // 기본 속성 설정
                 fabric.Object.prototype.set({ 
                     transparentCorners: false, 
                     cornerColor: '#fff', 
@@ -149,7 +148,7 @@
         <input type="file" id="dataInput" style="display:none;" accept=".xml,.csv">
         <button class="tool-btn" style="background:#e63946; color:white; border:none;" onclick="loadYoutubePrompt()" title="유튜브 주소"><i class="fa-brands fa-youtube"></i></button>
         <div class="divider"></div>
-        <!-- 영상 조작 모드 버튼 (유튜브 더보기 끄기용) -->
+        <!-- 영상 조작 모드 버튼 -->
         <button class="tool-btn" id="btn-video-touch" onclick="toggleVideoInteraction()" title="영상 조작 모드 (유튜브 추천영상 끄기)"><i class="fa-solid fa-hand-pointer"></i></button>
         <div class="divider"></div>
         <button class="tool-btn" id="btn-rewind" onclick="videoControl('rewind')" title="-5초 (←)"><i class="fa-solid fa-backward-step"></i></button>
@@ -261,7 +260,7 @@
 
             <div id="match-view-admin" class="m-content">
                 <div class="admin-form">
-                    <div class="form-group"><label>GitHub PAT</label><input type="password" id="gh-token" class="form-input" value="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"></div>
+                    <div class="form-group"><label>GitHub PAT (새로 발급받아 입력하세요)</label><input type="password" id="gh-token" class="form-input" placeholder="ghp_..."></div>
                     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
                         <div class="form-group"><label>ID</label><input type="text" id="gh-owner" class="form-input" value="Urekas"></div>
                         <div class="form-group"><label>Repo</label><input type="text" id="gh-repo" class="form-input" value="analysis"></div>
@@ -295,6 +294,8 @@
             <div id="m-shortcuts" class="m-content"><div id="shortcut-list"></div><button onclick="saveShortcuts()" style="margin-top:15px; padding:10px; background:var(--accent); color:white; border:none; width:100%; border-radius:5px;">저장</button></div>
         </div>
     </div>
+
+    <script src="https://www.youtube.com/iframe_api"></script>
 
     <script>
         // --- 🚀 앱 초기화 및 통합 로직 ---
@@ -367,18 +368,22 @@
                     switchMode('youtube');
                     if(isYtReady && ytPlayer && ytPlayer.loadVideoById) {
                         ytPlayer.loadVideoById(ytIdMatch[1]);
+                        setTimeout(() => ytPlayer.playVideo(), 500);
                     } else {
                         showStatus("플레이어 초기화 대기 중...");
                         let checkCount = 0;
                         const check = setInterval(() => {
                             checkCount++;
-                            if (isYtReady && ytPlayer) {
+                            if (isYtReady && ytPlayer && ytPlayer.loadVideoById) {
                                 clearInterval(check);
                                 ytPlayer.loadVideoById(ytIdMatch[1]);
+                                setTimeout(() => ytPlayer.playVideo(), 500);
                             }
-                            if (checkCount > 20) clearInterval(check);
+                            if (checkCount > 20) { clearInterval(check); showStatus("유튜브 로딩 실패. 새로고침 해주세요."); }
                         }, 500);
                     }
+                } else {
+                    alert("올바른 유튜브 링크가 아닙니다.");
                 }
             }
         }
@@ -658,7 +663,7 @@
         async function selectMatch(match) {
             closeMatchCenter(); showStatus(`${match.title} 로드 중...`, true);
             const ytMatch = match.video.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([^"&?\/\s]{11})/i);
-            if (ytMatch) { switchMode('youtube'); if(isYtReady && ytPlayer) ytPlayer.loadVideoById(ytMatch[1]); }
+            if (ytMatch) { switchMode('youtube'); if(isYtReady && ytPlayer && ytPlayer.loadVideoById) ytPlayer.loadVideoById(ytMatch[1]); }
             else { switchMode('local'); localVideo.src = match.video; localVideo.load(); }
             try {
                 const text = await fetchExternalData(match.data);
