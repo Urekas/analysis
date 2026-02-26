@@ -614,6 +614,9 @@
             justify-content: center;
             align-items: center;
             backdrop-filter: blur(5px);
+            /* 모달 내용이 넘칠 때 오버레이 자체도 스크롤 가능하게 */
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         .modal-box {
@@ -626,6 +629,7 @@
             position: relative;
             max-height: 85vh;
             overflow-y: auto;
+            box-sizing: border-box;
         }
 
         .close-btn {
@@ -868,6 +872,34 @@
                 right: 10px;
                 gap: 5px;
             }
+
+            /* 모바일 세로: 스크러버를 화면 하단 고정 오버레이로 전환 */
+            #videoScrubber {
+                position: fixed !important;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                height: 56px;
+                z-index: 500;
+                background: rgba(10, 10, 10, 0.88) !important;
+                backdrop-filter: blur(6px);
+                -webkit-backdrop-filter: blur(6px);
+                border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+                /* 기본은 숨김: 아래로 내려가 있음 */
+                transform: translateY(100%);
+                opacity: 0;
+                transition: transform 0.25s ease, opacity 0.25s ease;
+                display: flex !important;
+                /* 항상 flex로 유지, visibility로 제어 */
+                visibility: hidden;
+            }
+
+            /* 터치 시 토글되는 클래스 */
+            #videoScrubber.scrubber-visible {
+                transform: translateY(0);
+                opacity: 1;
+                visibility: visible;
+            }
         }
 
         @media (max-width: 950px) and (orientation: landscape) {
@@ -930,6 +962,31 @@
 
             body:has(.scene-sidebar.closed) .sidebar-toggle-area {
                 right: 0px;
+            }
+
+            /* 가로모드: 모달 오버레이를 상단 정렬 + 스크롤 허용 */
+            .modal-overlay {
+                align-items: flex-start;
+                padding: 10px 0;
+            }
+
+            /* 가로모드: 모달 박스 높이를 화면에 맞게 줄이고 내부 스크롤 */
+            .modal-box {
+                max-height: none;
+                width: 94%;
+                margin: auto;
+            }
+
+            /* 가로모드: 매치 센터 내 목록 영역 높이 제한 조정 */
+            #manage-list-container {
+                max-height: 200px !important;
+            }
+
+            /* 가로모드: m-content(탭 본문) 영역도 스크롤 허용 */
+            .m-content.active {
+                max-height: 55vh;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
             }
         }
     </style>
@@ -1302,6 +1359,60 @@
             initShortcuts();
             updateTimelineUI();
             loadAdminConfig();
+
+            // --- 📱 모바일 터치 → 타임라인 스크러버 표시/숨김 ---
+            (function initMobileScrubber() {
+                let scrubberHideTimer = null;
+
+                function isMobile() {
+                    return window.matchMedia('(max-width: 768px)').matches ||
+                        (window.matchMedia('(max-width: 950px)').matches && window.matchMedia('(orientation: landscape)').matches);
+                }
+
+                function showScrubberMobile() {
+                    if (!isMobile()) return;
+                    const s = document.getElementById('videoScrubber');
+                    if (!s || s.style.display === 'none') return; // 영상 없으면 무시
+                    s.classList.add('scrubber-visible');
+                    clearTimeout(scrubberHideTimer);
+                    scrubberHideTimer = setTimeout(() => {
+                        s.classList.remove('scrubber-visible');
+                    }, 3000);
+                }
+
+                // 영상/캔버스 영역 터치 시 스크러버 표시
+                const mc = document.getElementById('mediaContainer');
+                if (mc) {
+                    mc.addEventListener('touchstart', (e) => {
+                        showScrubberMobile();
+                    }, { passive: true });
+                }
+
+                // 스크러버 자체 터치 시 타이머 연장
+                const scrubber = document.getElementById('videoScrubber');
+                if (scrubber) {
+                    scrubber.addEventListener('touchstart', () => {
+                        clearTimeout(scrubberHideTimer);
+                        scrubberHideTimer = setTimeout(() => {
+                            scrubber.classList.remove('scrubber-visible');
+                        }, 4000);
+                    }, { passive: true });
+                    scrubber.addEventListener('touchend', () => {
+                        clearTimeout(scrubberHideTimer);
+                        scrubberHideTimer = setTimeout(() => {
+                            scrubber.classList.remove('scrubber-visible');
+                        }, 3000);
+                    }, { passive: true });
+                }
+
+                // 화면 회전 시 숨김 처리
+                window.addEventListener('orientationchange', () => {
+                    if (scrubber) scrubber.classList.remove('scrubber-visible');
+                });
+
+                // 외부에서 호출 가능하게 전역 노출
+                window._showScrubberMobile = showScrubberMobile;
+            })();
         });
 
         // --- 🎥 유튜브 및 미디어 제어 함수 ---
@@ -1321,7 +1432,20 @@
 
             if (ytDiv) ytDiv.style.display = (m === 'youtube' ? 'block' : 'none');
             if (localVid) localVid.style.display = (m === 'local' ? 'block' : 'none');
-            if (scrubber) scrubber.style.display = (m !== 'none' && m !== 'image' ? 'flex' : 'none');
+
+            // 모바일에서는 CSS + scrubber-visible 클래스로 제어; PC에서는 display flex/none 직접 제어
+            const isMobileView = window.matchMedia('(max-width: 768px)').matches ||
+                (window.matchMedia('(max-width: 950px)').matches && window.matchMedia('(orientation: landscape)').matches);
+            if (scrubber) {
+                if (isMobileView) {
+                    // 모바일: display는 flex 고정 (CSS에서 visibility/transform으로 제어)
+                    // 영상 없을 때만 display:none
+                    scrubber.style.display = (m !== 'none' && m !== 'image') ? 'flex' : 'none';
+                    scrubber.classList.remove('scrubber-visible');
+                } else {
+                    scrubber.style.display = (m !== 'none' && m !== 'image') ? 'flex' : 'none';
+                }
+            }
 
             if (m !== 'local' && localVid) localVid.pause();
             if (m !== 'youtube' && isYtReady && ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
