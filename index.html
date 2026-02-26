@@ -1892,6 +1892,7 @@
                     const text = await fetchExternalData(match.data);
                     parseSportsCodeXML(text);
                     openTab('tab-data');
+                    document.getElementById('sceneSidebar').classList.remove('closed');
                     showStatus(`${match.title} 로드 완료!`);
                 } else {
                     showStatus(`${match.title} (XML 데이터 없음)`);
