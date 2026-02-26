@@ -812,8 +812,7 @@
             }
 
             .sidebar,
-            .bottom-panel,
-            .sidebar-toggle-area {
+            .bottom-panel {
                 display: none !important;
             }
 
@@ -826,6 +825,38 @@
                 width: 100%;
                 flex: 1;
                 border-left: none;
+                transition: height 0.3s ease;
+            }
+
+            .scene-sidebar.closed {
+                display: none !important;
+            }
+
+            .sidebar-toggle-area {
+                position: absolute;
+                right: 0px;
+                bottom: -25px;
+                /* Adjusting for portrait mode bottom toggle */
+                top: auto;
+                transform: none;
+                z-index: 101;
+                width: 50px;
+                height: 25px;
+                background: #2a2a2a;
+                border: 1px solid #444;
+                border-top: none;
+                display: flex !important;
+                align-items: center;
+                justify-content: center;
+                border-radius: 0 0 5px 5px;
+            }
+
+            .scene-toggle-btn i {
+                transform: rotate(90deg);
+            }
+
+            body:has(.scene-sidebar.closed) .sidebar-toggle-area .scene-toggle-btn i {
+                transform: rotate(-90deg);
             }
 
             .top-menu {
@@ -868,7 +899,8 @@
                 border-left: 1px solid #333;
             }
 
-            .scene-sidebar.closed-landscape {
+            .scene-sidebar.closed {
+                width: 320px !important;
                 transform: translateX(100%);
             }
 
@@ -892,8 +924,7 @@
                 transition: right 0.3s ease;
             }
 
-            .scene-sidebar.closed-landscape~.sidebar-toggle-area,
-            body:has(.scene-sidebar.closed-landscape) .sidebar-toggle-area {
+            body:has(.scene-sidebar.closed) .sidebar-toggle-area {
                 right: 0px;
             }
         }
@@ -978,7 +1009,7 @@
     </div>
 
     <div class="workspace">
-        <div class="sidebar-toggle-area" onclick="toggleLandscapeSidebar()">
+        <div class="sidebar-toggle-area" onclick="toggleSceneSidebar()">
             <div class="scene-toggle-btn"><i class="fa-solid fa-chevron-right" id="sceneToggleIcon"></i></div>
         </div>
         <div class="top-menu">
@@ -1194,6 +1225,15 @@
                 const localVideo = document.getElementById('local-video');
                 localVideo.src = URL.createObjectURL(file);
                 localVideo.load();
+
+                // 메타데이터 로드 즉시 길이 표시 강제 갱신
+                localVideo.onloadedmetadata = () => {
+                    const dur = localVideo.duration || 0;
+                    if (isFinite(dur)) {
+                        document.getElementById('timeDisplay').innerText = `0:00 / ${formatTime(dur)}`;
+                    }
+                };
+
                 localVideo.play();
                 e.target.value = null; // 재선택 가능하게
             });
@@ -1301,41 +1341,73 @@
         }
 
         function updateTimelineUI() {
-            if (!isDraggingSlider) {
-                let cur = 0, dur = 0;
-                const localVid = document.getElementById('local-video');
-                const timeSliderElem = document.getElementById('timeSlider');
-                const timeDisplayElem = document.getElementById('timeDisplay');
+            try {
+                if (!isDraggingSlider) {
+                    let cur = 0, dur = 0;
+                    const localVid = document.getElementById('local-video');
+                    const timeSliderElem = document.getElementById('timeSlider');
+                    const timeDisplayElem = document.getElementById('timeDisplay');
 
-                if (currentMediaType === 'local' && localVid && localVid.duration) { cur = localVid.currentTime; dur = localVid.duration; }
-                else if (currentMediaType === 'youtube' && isYtReady && ytPlayer && ytPlayer.getDuration) { cur = ytPlayer.getCurrentTime(); dur = ytPlayer.getDuration(); }
+                    if (currentMediaType === 'local' && localVid) {
+                        cur = localVid.currentTime || 0;
+                        dur = localVid.duration || 0;
+                    }
+                    else if (currentMediaType === 'youtube' && isYtReady && ytPlayer && typeof ytPlayer.getDuration === 'function') {
+                        cur = ytPlayer.getCurrentTime() || 0;
+                        dur = ytPlayer.getDuration() || 0;
+                    }
 
-                if (dur > 0 && timeSliderElem && timeDisplayElem) {
-                    timeSliderElem.value = (cur / dur) * 100;
-                    timeDisplayElem.innerText = `${formatTime(cur)} / ${formatTime(dur)}`;
+                    if (timeSliderElem && timeDisplayElem) {
+                        if (dur > 0 && isFinite(dur)) {
+                            timeSliderElem.value = (cur / dur) * 100;
+                            timeDisplayElem.innerText = `${formatTime(cur)} / ${formatTime(dur)}`;
+                        } else {
+                            timeSliderElem.value = 0;
+                            timeDisplayElem.innerText = "0:00 / 0:00";
+                        }
+                    }
                 }
+
+                // Update Play/Pause Button Icon to reflect state
+                const playBtn = document.getElementById('btn-play-scrubber');
+                if (playBtn) {
+                    if (currentMediaType === 'local' && localVid) {
+                        playBtn.innerHTML = localVid.paused ? '<i class="fa-solid fa-play"></i>' : '<i class="fa-solid fa-pause"></i>';
+                    } else if (currentMediaType === 'youtube' && isYtReady && ytPlayer && typeof ytPlayer.getPlayerState === 'function') {
+                        playBtn.innerHTML = (ytPlayer.getPlayerState() === 1) ? '<i class="fa-solid fa-pause"></i>' : '<i class="fa-solid fa-play"></i>';
+                    }
+                }
+
+            } catch (e) {
+                // Ignore API not ready errors, just keep looping
             }
             requestAnimationFrame(updateTimelineUI);
         }
 
         const timeSliderGlobal = document.getElementById('timeSlider');
         if (timeSliderGlobal) {
-            timeSliderGlobal.oninput = () => { isDraggingSlider = true; };
-            timeSliderGlobal.onchange = () => {
+            timeSliderGlobal.addEventListener('input', () => { isDraggingSlider = true; });
+            timeSliderGlobal.addEventListener('change', () => {
                 isDraggingSlider = false;
                 const localVid = document.getElementById('local-video');
                 const val = timeSliderGlobal.value / 100;
-                if (currentMediaType === 'local' && localVid) localVid.currentTime = val * localVid.duration;
-                else if (currentMediaType === 'youtube') ytPlayer.seekTo(val * ytPlayer.getDuration(), true);
-            };
+                if (currentMediaType === 'local' && localVid && localVid.duration) localVid.currentTime = val * localVid.duration;
+                else if (currentMediaType === 'youtube' && isYtReady && ytPlayer && typeof ytPlayer.getDuration === 'function') ytPlayer.seekTo(val * ytPlayer.getDuration(), true);
+            });
+            timeSliderGlobal.addEventListener('pointerup', () => { isDraggingSlider = false; });
+            timeSliderGlobal.addEventListener('touchend', () => { isDraggingSlider = false; });
         }
 
-        speedSlider.oninput = () => {
-            const rate = parseFloat(speedSlider.value);
-            document.getElementById('speedVal').innerText = rate.toFixed(1) + 'x';
-            if (currentMediaType === 'local') localVideo.playbackRate = rate;
-            else if (currentMediaType === 'youtube' && isYtReady) ytPlayer.setPlaybackRate(rate);
-        };
+        const speedSlider = document.getElementById('speedSlider');
+        if (speedSlider) {
+            speedSlider.oninput = () => {
+                const rate = parseFloat(speedSlider.value);
+                document.getElementById('speedVal').innerText = rate.toFixed(1) + 'x';
+                const localVid = document.getElementById('local-video');
+                if (currentMediaType === 'local' && localVid) localVid.playbackRate = rate;
+                else if (currentMediaType === 'youtube' && isYtReady && ytPlayer && typeof ytPlayer.setPlaybackRate === 'function') ytPlayer.setPlaybackRate(rate);
+            };
+        }
 
         function resizeCanvas() {
             const cont = document.getElementById('mediaContainer');
@@ -1749,8 +1821,15 @@
                 }
             } else if (videoUrl) {
                 switchMode('local');
+                const localVideo = document.getElementById('local-video');
                 localVideo.src = videoUrl;
                 localVideo.load();
+                localVideo.onloadedmetadata = () => {
+                    const dur = localVideo.duration || 0;
+                    if (isFinite(dur)) {
+                        document.getElementById('timeDisplay').innerText = `0:00 / ${formatTime(dur)}`;
+                    }
+                };
             } else {
                 switchMode('none');
                 showStatus(`영상 링크가 비어있습니다.`);
@@ -1899,6 +1978,7 @@
         }
 
         // --- 🎨 드로잉 모드 및 마우스 핸들러 전역 선언 ---
+        function hexToMutedRgba(h, a) { const r = parseInt(h.slice(1, 3), 16), g = parseInt(h.slice(3, 5), 16), b = parseInt(h.slice(5, 7), 16); return `rgba(${r},${g},${b},${a})`; }
         function getStrokeGradient(color) { return new fabric.Gradient({ type: 'linear', gradientUnits: 'percentage', coords: { x1: 0, y1: 0, x2: 0, y2: 1 }, colorStops: [{ offset: 0, color: hexToMutedRgba(color, 0) }, { offset: 0.5, color: hexToMutedRgba(color, 0.5) }, { offset: 1, color: color }] }); }
         function getEllipseOffset(point, targetX, targetY, rx, ry) { const dx = targetX - point.left; const dy = targetY - point.top; const angle = Math.atan2(dy, dx); const radiusAtAngle = (rx * ry) / Math.sqrt(Math.pow(ry * Math.cos(angle), 2) + Math.pow(rx * Math.sin(angle), 2)); const offset = radiusAtAngle + 2; return { x: point.left + Math.cos(angle) * offset, y: point.top + Math.sin(angle) * offset }; }
 
@@ -1947,7 +2027,7 @@
             if ((currentMode === 'drawPolyline' || currentMode === 'drawPolygon') && activePoints.length > 0) { const lastPt = activePoints[activePoints.length - 1]; const dist = Math.sqrt(Math.pow(p.x - lastPt.left, 2) + Math.pow(p.y - lastPt.top, 2)); if (dist < 20) return; }
 
             if (currentMode === 'drawSpot') {
-                canvas.add(new fabric.Ellipse({ left: p.x, top: p.y, rx: currentSize, ry: currentSize * 0.4, fill: hexToMutedRgba(currentColor, currentOpacity), stroke: getStrokeGradient(currentColor), strokeWidth: 4, originX: 'center', originY: 'center', shadow: new fabric.Shadow({ color: currentColor, blur: 20 }) }));
+                DrawingHandler.createSpot(canvas, p, currentColor, currentSize, currentOpacity);
             }
             else if (currentMode === 'drawArrow' || currentMode === 'drawCurve') {
                 isDrawing = true; startPoint = p;
@@ -1979,10 +2059,9 @@
             if ((currentMode === 'drawArrow' || currentMode === 'drawCurve') && isDrawing) {
                 isDrawing = false; const end = canvas.getPointer(o.e); canvas.remove(activeObj);
                 if (currentMode === 'drawArrow') {
-                    createArrow(startPoint, end);
+                    DrawingHandler.createArrow(canvas, startPoint, end, currentColor, currentSize, typeof isDashed !== 'undefined' ? isDashed : false);
                 } else {
-                    const mid = { x: (startPoint.x + end.x) / 2, y: (startPoint.y + end.y) / 2 }; const cp = { x: mid.x, y: mid.y - 50 };
-                    const curve = new fabric.CurvedArrow(startPoint, cp, end, { stroke: currentColor, strokeWidth: 4, headSize: currentSize, shadow: broadcastShadow, strokeDashArray: typeof isDashed !== 'undefined' && isDashed ? [10, 5] : false, objectCaching: false }); canvas.add(curve); canvas.setActiveObject(curve);
+                    DrawingHandler.startCurve(canvas, startPoint, end, currentColor, currentSize, typeof isDashed !== 'undefined' ? isDashed : false);
                 }
                 setMode('select');
             }
@@ -2061,7 +2140,8 @@
             }
         }
         window.addEventListener('keydown', (e) => {
-            if (e.target.tagName === 'INPUT' || e.target.isContentEditable) return;
+            if (e.target.tagName === 'INPUT' && e.target.type !== 'range') return;
+            if (e.target.tagName === 'TEXTAREA' || (e.target.isContentEditable && e.target.tagName !== 'BODY')) return;
             const key = e.key;
             if (key === shortcutConfig.select.key) setMode('select');
             else if (key === shortcutConfig.drawPen.key) setMode('drawPen');
@@ -2074,15 +2154,7 @@
         });
 
         function completeDrawing() {
-            if (pointArray.length < 2) { resetDrawing(); return; }
-            if (currentMode === 'drawPolyline') {
-                const groupItems = [...componentArray];
-                const group = new fabric.Group(groupItems, { selectable: true, shadow: broadcastShadow });
-                componentArray.forEach(o => canvas.remove(o)); canvas.add(group); canvas.setActiveObject(group);
-            } else if (currentMode === 'drawPolygon') {
-                const poly = new fabric.Polygon(pointArray, { fill: hexToMutedRgba(currentColor, currentOpacity), stroke: currentColor, strokeWidth: 2 });
-                activePoints.forEach(p => canvas.remove(p)); activeLines.forEach(l => canvas.remove(l)); canvas.add(poly);
-            }
+            DrawingHandler.completeComplexShape(canvas, currentMode, pointArray, activePoints, activeLines, currentColor, currentOpacity, typeof isDashed !== 'undefined' ? isDashed : false);
             resetDrawing(); setMode('select');
         }
 
@@ -2092,14 +2164,66 @@
         function deleteObject() { if (!canvas) return; const active = canvas.getActiveObjects(); if (active.length) { canvas.discardActiveObject(); active.forEach(o => canvas.remove(o)); } }
         function clearAll() { if (!canvas) return; if (confirm("모두 삭제할까요?")) canvas.clear(); }
         function resetDrawing() { pointArray = []; activePoints = []; activeLines = []; componentArray = []; isDrawing = false; document.getElementById('btn-finish').classList.remove('show'); }
-        function formatTime(s) { const m = Math.floor(s / 60); const sec = Math.floor(s % 60); return `${m}:${sec < 10 ? '0' + sec : sec}`; }
+        function formatTime(s) { if (isNaN(s) || !isFinite(s)) return "0:00"; const m = Math.floor(s / 60); const sec = Math.floor(s % 60); return `${m}:${sec < 10 ? '0' + sec : sec}`; }
         function jumpToTime(s) { const t = s + timeOffset; if (currentMediaType === 'youtube' && isYtReady) ytPlayer.seekTo(t, true); else if (currentMediaType === 'local') localVideo.currentTime = t; }
         function adjustSync(v) { timeOffset += v; document.getElementById('syncDisplay').innerText = `Sync: ${timeOffset.toFixed(1)}s`; }
         function toggleHelp() { const m = document.getElementById('helpModal'); m.style.display = m.style.display === 'flex' ? 'none' : 'flex'; }
 
-        function createArrow(s, e) { const h = currentSize, a = Math.atan2(e.y - s.y, e.x - s.x) * 180 / Math.PI, l = Math.sqrt(Math.pow(e.x - s.x, 2) + Math.pow(e.y - s.y, 2)), mx = (s.x + e.x) / 2, my = (s.y + e.y) / 2, p = `M ${-l / 2} 0 L ${l / 2 - h + 5} 0`, letDashed = typeof isDashed !== 'undefined' ? isDashed : false, ln = new fabric.Path(p, { stroke: currentColor, strokeWidth: 4, strokeDashArray: letDashed ? [10, 5] : false, fill: '', originX: 'center', originY: 'center' }), hd = new fabric.Triangle({ width: h, height: h, fill: currentColor, angle: 90, left: l / 2, top: 0, originX: 'center', originY: 'center' }), g = new fabric.Group([ln, hd], { left: mx, top: my, angle: a, originX: 'center', originY: 'center', shadow: broadcastShadow }); canvas.add(g); }
+        // --- 🎨 Drawing Handler Core (Provided by User) ---
+        const DrawingHandler = {
+            createSpot: function (canvas, p, color, size, opacity) {
+                const spot = new fabric.Ellipse({
+                    left: p.x, top: p.y, rx: size, ry: size * 0.4,
+                    fill: hexToMutedRgba(color, opacity), stroke: getStrokeGradient(color), strokeWidth: 4,
+                    originX: 'center', originY: 'center', shadow: new fabric.Shadow({ color: color, blur: 20 })
+                });
+                canvas.add(spot);
+            },
+            createArrow: function (canvas, s, e, color, size, isDashed) {
+                const headSize = size; const angle = Math.atan2(e.y - s.y, e.x - s.x) * 180 / Math.PI; const lineLen = Math.sqrt(Math.pow(e.x - s.x, 2) + Math.pow(e.y - s.y, 2)); const midX = (s.x + e.x) / 2; const midY = (s.y + e.y) / 2;
+                const linePath = `M ${-lineLen / 2} 0 L ${lineLen / 2 - headSize + 5} 0`;
+                const line = new fabric.Path(linePath, { stroke: color, strokeWidth: 4, strokeDashArray: isDashed ? [10, 5] : false, fill: '', originX: 'center', originY: 'center' });
+                const head = new fabric.Triangle({ width: headSize, height: headSize, fill: color, angle: 90, left: lineLen / 2, top: 0, originX: 'center', originY: 'center' });
+                const arrowGroup = new fabric.Group([line, head], { left: midX, top: midY, angle: angle, originX: 'center', originY: 'center', shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.8)', blur: 8, offsetX: 2, offsetY: 2 }) });
+                canvas.add(arrowGroup);
+            },
+            startCurve: function (canvas, s, e, color, size, isDashed) {
+                const mid = { x: (s.x + e.x) / 2, y: (s.y + e.y) / 2 }; const cp = { x: mid.x, y: mid.y - 50 };
+                const curve = new fabric.CurvedArrow(s, cp, e, { stroke: color, strokeWidth: 4, headSize: size, strokeDashArray: isDashed ? [10, 5] : false, objectCaching: false });
+                canvas.add(curve); canvas.setActiveObject(curve);
+            },
+            completeComplexShape: function (canvas, mode, pointArray, activePoints, activeLines, color, opacity, isDashed) {
+                if (pointArray.length < 2) return;
+                if (mode === 'drawPolyline') {
+                    const objects = canvas.getObjects().filter(obj => activePoints.includes(obj) || activeLines.includes(obj));
+                    const group = new fabric.Group(objects, { selectable: true });
+                    objects.forEach(o => canvas.remove(o)); canvas.add(group);
+                } else if (mode === 'drawPolygon') {
+                    const poly = new fabric.Polygon(pointArray, { fill: hexToMutedRgba(color, opacity), stroke: color, strokeWidth: 2, strokeDashArray: isDashed ? [10, 5] : false, objectCaching: false });
+                    activePoints.concat(activeLines).forEach(o => canvas.remove(o)); canvas.add(poly); canvas.setActiveObject(poly);
+                }
+            }
+        };
 
-        fabric.CurvedArrow = fabric.util.createClass(fabric.Object, { type: 'curvedArrow', initialize: function (p0, p1, p2, options) { this.p0 = p0; this.p1 = p1; this.p2 = p2; options = options || {}; this.callSuper('initialize', options); this.headSize = options.headSize || 30; this.strokeWidth = options.strokeWidth || 5; this.stroke = options.stroke || '#fff'; this.strokeDashArray = options.strokeDashArray || false; this._updateBoundingBox(); this.prevLeft = this.left; this.prevTop = this.top; this.on('moving', () => { const dx = this.left - this.prevLeft; const dy = this.top - this.prevTop; this.p0.x += dx; this.p0.y += dy; this.p1.x += dx; this.p1.y += dy; this.p2.x += dx; this.p2.y += dy; this.prevLeft = this.left; this.prevTop = this.top; }); this.on('selected', () => { this.prevLeft = this.left; this.prevTop = this.top; }); }, _updateBoundingBox: function () { const minX = Math.min(this.p0.x, this.p1.x, this.p2.x); const maxX = Math.max(this.p0.x, this.p1.x, this.p2.x); const minY = Math.min(this.p0.y, this.p1.y, this.p2.y); const maxY = Math.max(this.p0.y, this.p1.y, this.p2.y); this.left = minX; this.top = minY; this.width = maxX - minX; this.height = maxY - minY; }, _render: function (ctx) { ctx.save(); ctx.beginPath(); ctx.lineWidth = this.strokeWidth; ctx.strokeStyle = this.stroke; ctx.lineCap = 'round'; if (this.strokeDashArray) ctx.setLineDash(this.strokeDashArray); const p0 = this.toLocalPoint(new fabric.Point(this.p0.x, this.p0.y), 'center', 'center'); const p1 = this.toLocalPoint(new fabric.Point(this.p1.x, this.p1.y), 'center', 'center'); const p2 = this.toLocalPoint(new fabric.Point(this.p2.x, this.p2.y), 'center', 'center'); ctx.moveTo(p0.x, p0.y); ctx.quadraticCurveTo(p1.x, p1.y, p2.x, p2.y); ctx.stroke(); ctx.setLineDash([]); let dx = p2.x - p1.x; let dy = p2.y - p1.y; if (dx === 0 && dy === 0) { dx = p1.x - p0.x; dy = p1.y - p0.y; } const angle = Math.atan2(dy, dx); ctx.translate(p2.x, p2.y); ctx.rotate(angle); ctx.beginPath(); const s = this.headSize; ctx.moveTo(0, 0); ctx.lineTo(-s, s / 2); ctx.lineTo(-s, -s / 2); ctx.closePath(); ctx.fillStyle = this.stroke; ctx.fill(); ctx.restore(); } });
+        fabric.CurvedArrow = fabric.util.createClass(fabric.Object, {
+            type: 'curvedArrow',
+            initialize: function (p0, p1, p2, options) {
+                this.p0 = p0; this.p1 = p1; this.p2 = p2; options = options || {}; this.callSuper('initialize', options);
+                this.headSize = options.headSize || 30; this.strokeWidth = options.strokeWidth || 5; this.stroke = options.stroke || '#fff'; this.strokeDashArray = options.strokeDashArray || false;
+                this._updateBoundingBox(); this.prevLeft = this.left; this.prevTop = this.top;
+                this.on('moving', () => { const dx = this.left - this.prevLeft; const dy = this.top - this.prevTop;[this.p0, this.p1, this.p2].forEach(p => { p.x += dx; p.y += dy; }); this.prevLeft = this.left; this.prevTop = this.top; });
+                this.on('selected', () => { this.prevLeft = this.left; this.prevTop = this.top; });
+            },
+            _updateBoundingBox: function () { const minX = Math.min(this.p0.x, this.p1.x, this.p2.x); const maxX = Math.max(this.p0.x, this.p1.x, this.p2.x); const minY = Math.min(this.p0.y, this.p1.y, this.p2.y); const maxY = Math.max(this.p0.y, this.p1.y, this.p2.y); this.left = minX; this.top = minY; this.width = maxX - minX; this.height = maxY - minY; },
+            _render: function (ctx) {
+                ctx.save(); ctx.beginPath(); ctx.lineWidth = this.strokeWidth; ctx.strokeStyle = this.stroke; ctx.lineCap = 'round'; if (this.strokeDashArray) ctx.setLineDash(this.strokeDashArray);
+                const p0 = this.toLocalPoint(new fabric.Point(this.p0.x, this.p0.y), 'center', 'center'); const p1 = this.toLocalPoint(new fabric.Point(this.p1.x, this.p1.y), 'center', 'center'); const p2 = this.toLocalPoint(new fabric.Point(this.p2.x, this.p2.y), 'center', 'center');
+                ctx.moveTo(p0.x, p0.y); ctx.quadraticCurveTo(p1.x, p1.y, p2.x, p2.y); ctx.stroke(); ctx.setLineDash([]);
+                let dx = p2.x - p1.x; let dy = p2.y - p1.y; if (dx === 0 && dy === 0) { dx = p1.x - p0.x; dy = p1.y - p0.y; }
+                const angle = Math.atan2(dy, dx); ctx.translate(p2.x, p2.y); ctx.rotate(angle); ctx.beginPath(); const s = this.headSize; ctx.moveTo(0, 0); ctx.lineTo(-s, s / 2); ctx.lineTo(-s, -s / 2); ctx.closePath(); ctx.fillStyle = this.stroke; ctx.fill(); ctx.restore();
+            }
+        });
+
         fabric.CurvedArrow.prototype.controls = {};
         function createControl(key, color) { return new fabric.Control({ position: { x: 0, y: 0 }, actionName: key, cursorStyle: 'pointer', actionHandler: function (eventData, transform, x, y) { const target = transform.target; target[key] = { x: x, y: y }; target._updateBoundingBox(); target.prevLeft = target.left; target.prevTop = target.top; return true; }, positionHandler: function (dim, finalMatrix, fabricObject) { const point = fabricObject[key]; return fabric.util.transformPoint(new fabric.Point(point.x, point.y), canvas.viewportTransform); }, render: function (ctx, left, top, styleOverride, fabricObject) { ctx.save(); ctx.translate(left, top); ctx.beginPath(); ctx.arc(0, 0, 6, 0, 2 * Math.PI); ctx.fillStyle = color; ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.fill(); ctx.stroke(); ctx.restore(); } }); }
         fabric.CurvedArrow.prototype.controls.p0 = createControl('p0', '#ffffff'); fabric.CurvedArrow.prototype.controls.p1 = createControl('p1', '#3498db'); fabric.CurvedArrow.prototype.controls.p2 = createControl('p2', '#ffffff');
@@ -2107,7 +2231,7 @@
         function openTab(id) { document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.getElementById(id).classList.add('active'); }
         function toggleSceneSidebar() { document.getElementById('sceneSidebar').classList.toggle('closed'); document.getElementById('sceneToggleIcon').className = document.getElementById('sceneSidebar').classList.contains('closed') ? 'fa-solid fa-chevron-left' : 'fa-solid fa-chevron-right'; setTimeout(resizeCanvas, 350); }
         function setColor(hex, el) { currentColor = hex; document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected')); el.classList.add('selected'); if (canvas && canvas.isDrawingMode) canvas.freeDrawingBrush.color = hex; }
-        function hexToMutedRgba(h, a) { const r = parseInt(h.slice(1, 3), 16), g = parseInt(h.slice(3, 5), 16), b = parseInt(h.slice(5, 7), 16); return `rgba(${r},${g},${b},${a})`; }
+
         function togglePalm() { isPalmRejection = !isPalmRejection; document.getElementById('btn-palm').classList.toggle('active'); }
         function switchModalTab(t) { document.getElementById('m-guide').classList.toggle('active', t === 'guide'); document.getElementById('m-shortcuts').classList.toggle('active', t === 'shortcuts'); if (t === 'shortcuts') initShortcuts(); }
         function showStatus(m, rec = false) { const el = document.getElementById('status-msg'); el.innerText = m; el.style.display = 'block'; if (!rec) setTimeout(() => el.style.display = 'none', 3000); }
