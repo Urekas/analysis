@@ -202,6 +202,30 @@
             transition: 0.1s;
         }
 
+        .scrubber-btn {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            margin: 0 5px;
+            padding: 5px;
+            transition: 0.2s;
+        }
+
+        .scrubber-btn:hover {
+            color: var(--accent);
+        }
+
+        .version-display {
+            position: absolute;
+            bottom: 5px;
+            right: 15px;
+            color: #777;
+            font-size: 0.8rem;
+            z-index: 100;
+        }
+
         .time-display {
             font-family: monospace;
             color: #ccc;
@@ -920,13 +944,6 @@
         <button class="tool-btn" id="btn-video-touch" onclick="toggleVideoInteraction()"
             title="영상 조작 모드 (유튜브 추천영상 끄기)"><i class="fa-solid fa-hand-pointer"></i></button>
         <div class="divider"></div>
-        <button class="tool-btn" id="btn-rewind" onclick="videoControl('rewind')" title="-5초 (←)"><i
-                class="fa-solid fa-backward-step"></i></button>
-        <button class="tool-btn" id="btn-play" onclick="videoControl('toggle')" title="재생/정지 (Space)"><i
-                class="fa-solid fa-play"></i></button>
-        <button class="tool-btn" id="btn-forward" onclick="videoControl('forward')" title="+5초 (→)"><i
-                class="fa-solid fa-forward-step"></i></button>
-        <div class="divider"></div>
         <button class="tool-btn" onclick="togglePalm()" id="btn-palm" title="터치 방지"><i
                 class="fa-solid fa-hand-pointer"></i></button>
         <div class="divider"></div>
@@ -980,9 +997,17 @@
             <div id="youtube-player"></div>
             <video id="local-video" playsinline crossOrigin="anonymous"></video>
             <div class="canvas-wrapper" id="canvasWrapper"><canvas id="c"></canvas></div>
+            <div class="version-display">v124</div>
         </div>
         <div class="scrubber-area" id="videoScrubber">
-            <div class="time-display" id="timeDisplay">0:00 / 0:00</div>
+            <button class="scrubber-btn" onclick="videoControl('rewind')" title="-5초 (←)"><i
+                    class="fa-solid fa-backward-step"></i></button>
+            <button class="scrubber-btn" onclick="videoControl('toggle')" id="btn-play-scrubber"
+                title="재생/정지 (Space)"><i class="fa-solid fa-play"></i></button>
+            <button class="scrubber-btn" onclick="videoControl('forward')" title="+5초 (→)"><i
+                    class="fa-solid fa-forward-step"></i></button>
+            <div class="time-display" id="timeDisplay" style="margin-left: 10px; min-width: 80px; text-align: center;">
+                0:00 / 0:00</div>
             <input type="range" class="scrubber-input" id="timeSlider" min="0" max="100" value="0" step="0.1">
         </div>
         <div class="bottom-panel">
@@ -1158,30 +1183,29 @@
             // Fabric 초기화
             if (typeof fabric !== 'undefined') {
                 canvas = new fabric.Canvas('c', { preserveObjectStacking: true });
-
-                canvas.on('mouse:move', o => { if (isDrawing && activeObj) { const p = canvas.getPointer(o.e); activeObj.set({ x2: p.x, y2: p.y }); canvas.renderAll(); } });
-                canvas.on('mouse:up', o => {
-                    if (isDrawing) {
-                        isDrawing = false; const p = canvas.getPointer(o.e); canvas.remove(activeObj);
-                        if (currentMode === 'drawArrow') {
-                            const h = currentSize, a = Math.atan2(p.y - startPoint.y, p.x - startPoint.x) * 180 / Math.PI;
-                            const l = Math.sqrt(Math.pow(p.x - startPoint.x, 2) + Math.pow(p.y - startPoint.y, 2));
-                            const line = new fabric.Path(`M ${-l / 2} 0 L ${l / 2 - h + 5} 0`, { stroke: currentColor, strokeWidth: 4, fill: '', originX: 'center', originY: 'center' });
-                            const head = new fabric.Triangle({ width: h, height: h, fill: currentColor, angle: 90, left: l / 2, top: 0, originX: 'center', originY: 'center' });
-                            canvas.add(new fabric.Group([line, head], { left: (startPoint.x + p.x) / 2, top: (startPoint.y + p.y) / 2, angle: a, originX: 'center', originY: 'center', shadow: broadcastShadow }));
-                        } else createCurvedArrow(startPoint, p);
-                        setMode('select');
-                    }
-                });
-
-                fabric.CurvedArrow = fabric.util.createClass(fabric.Object, {
-                    type: 'curvedArrow', initialize: function (p0, p1, p2, options) { this.p0 = p0; this.p1 = p1; this.p2 = p2; this.callSuper('initialize', options); this.width = Math.abs(p2.x - p0.x) || 1; this.height = Math.abs(p2.y - p0.y) || 1; },
-                    _render: function (ctx) { ctx.beginPath(); ctx.moveTo(this.p0.x - this.left - this.width / 2, this.p0.y - this.top - this.height / 2); ctx.quadraticCurveTo(this.p1.x - this.left - this.width / 2, this.p1.y - this.top - this.height / 2, this.p2.x - this.left - this.width / 2, this.p2.y - this.top - this.height / 2); ctx.strokeStyle = this.stroke; ctx.lineWidth = this.strokeWidth; ctx.stroke(); }
-                });
             }
 
-            const vIn = document.getElementById('videoInput'); if (vIn) vIn.onchange = (e) => { const file = e.target.files[0]; if (!file) return; switchMode('local'); localVideo.src = URL.createObjectURL(file); localVideo.load(); };
-            const dIn = document.getElementById('dataInput'); if (dIn) dIn.onchange = (e) => { const file = e.target.files[0]; if (!file) return; const r = new FileReader(); r.onload = (d) => { parseSportsCodeXML(d.target.result); openTab('tab-data'); }; r.readAsText(file); };
+            // 파일 입력 핸들러 추가
+            const vIn = document.getElementById('videoInput');
+            if (vIn) vIn.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                switchMode('local');
+                const localVideo = document.getElementById('local-video');
+                localVideo.src = URL.createObjectURL(file);
+                localVideo.load();
+                localVideo.play();
+                e.target.value = null; // 재선택 가능하게
+            });
+
+            const dIn = document.getElementById('dataInput');
+            if (dIn) dIn.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const r = new FileReader();
+                r.onload = (d) => { parseSportsCodeXML(d.target.result); openTab('tab-data'); };
+                r.readAsText(file);
+            });
 
             setTimeout(resizeCanvas, 500);
             initShortcuts();
@@ -1280,20 +1304,31 @@
             if (!isDraggingSlider) {
                 let cur = 0, dur = 0;
                 const localVid = document.getElementById('local-video');
+                const timeSliderElem = document.getElementById('timeSlider');
+                const timeDisplayElem = document.getElementById('timeDisplay');
+
                 if (currentMediaType === 'local' && localVid && localVid.duration) { cur = localVid.currentTime; dur = localVid.duration; }
                 else if (currentMediaType === 'youtube' && isYtReady && ytPlayer && ytPlayer.getDuration) { cur = ytPlayer.getCurrentTime(); dur = ytPlayer.getDuration(); }
-                if (dur > 0) { timeSlider.value = (cur / dur) * 100; timeDisplay.innerText = `${formatTime(cur)} / ${formatTime(dur)}`; }
+
+                if (dur > 0 && timeSliderElem && timeDisplayElem) {
+                    timeSliderElem.value = (cur / dur) * 100;
+                    timeDisplayElem.innerText = `${formatTime(cur)} / ${formatTime(dur)}`;
+                }
             }
             requestAnimationFrame(updateTimelineUI);
         }
 
-        timeSlider.oninput = () => { isDraggingSlider = true; };
-        timeSlider.onchange = () => {
-            isDraggingSlider = false;
-            const val = timeSlider.value / 100;
-            if (currentMediaType === 'local') localVideo.currentTime = val * localVideo.duration;
-            else if (currentMediaType === 'youtube') ytPlayer.seekTo(val * ytPlayer.getDuration(), true);
-        };
+        const timeSliderGlobal = document.getElementById('timeSlider');
+        if (timeSliderGlobal) {
+            timeSliderGlobal.oninput = () => { isDraggingSlider = true; };
+            timeSliderGlobal.onchange = () => {
+                isDraggingSlider = false;
+                const localVid = document.getElementById('local-video');
+                const val = timeSliderGlobal.value / 100;
+                if (currentMediaType === 'local' && localVid) localVid.currentTime = val * localVid.duration;
+                else if (currentMediaType === 'youtube') ytPlayer.seekTo(val * ytPlayer.getDuration(), true);
+            };
+        }
 
         speedSlider.oninput = () => {
             const rate = parseFloat(speedSlider.value);
@@ -1863,7 +1898,95 @@
             } catch (e) { status.innerHTML = `<span style="color:#e74c3c;">오류: ${e.message}</span>`; } finally { btn.disabled = false; }
         }
 
+        // --- 🎨 드로잉 모드 및 마우스 핸들러 전역 선언 ---
+        function getStrokeGradient(color) { return new fabric.Gradient({ type: 'linear', gradientUnits: 'percentage', coords: { x1: 0, y1: 0, x2: 0, y2: 1 }, colorStops: [{ offset: 0, color: hexToMutedRgba(color, 0) }, { offset: 0.5, color: hexToMutedRgba(color, 0.5) }, { offset: 1, color: color }] }); }
+        function getEllipseOffset(point, targetX, targetY, rx, ry) { const dx = targetX - point.left; const dy = targetY - point.top; const angle = Math.atan2(dy, dx); const radiusAtAngle = (rx * ry) / Math.sqrt(Math.pow(ry * Math.cos(angle), 2) + Math.pow(rx * Math.sin(angle), 2)); const offset = radiusAtAngle + 2; return { x: point.left + Math.cos(angle) * offset, y: point.top + Math.sin(angle) * offset }; }
 
+        function setMode(mode) {
+            if (typeof isVideoInteractive !== 'undefined' && isVideoInteractive) toggleVideoInteraction();
+            currentMode = mode;
+            document.querySelectorAll('.sidebar .tool-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('btn-' + mode)?.classList.add('active');
+
+            const guide = document.getElementById('guide-msg');
+            if (guide) guide.style.display = (mode === 'drawPolyline' || mode === 'drawPolygon') ? 'block' : 'none';
+            if (mode === 'drawPolyline' || mode === 'drawPolygon') { guide.innerText = "더블클릭하여 도형 완성"; }
+
+            if (canvas) {
+                if (mode === 'drawPen') {
+                    canvas.isDrawingMode = true;
+                    canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+                    canvas.freeDrawingBrush.color = currentColor;
+                    canvas.freeDrawingBrush.width = currentSize / 4;
+                    canvas.freeDrawingBrush.shadow = broadcastShadow;
+                    canvas.selection = false;
+                } else {
+                    canvas.isDrawingMode = false;
+                    canvas.selection = (mode === 'select');
+                    canvas.defaultCursor = (mode === 'select') ? 'default' : 'crosshair';
+                    const s = (mode === 'select');
+                    canvas.forEachObject(o => { o.selectable = s; o.evented = s; });
+                }
+            }
+            if (canvas) canvas.requestRenderAll();
+            resetDrawing();
+        }
+
+        canvas.on('mouse:down', function (o) {
+            if (isPalmRejection && o.e && (o.e.pointerType === 'touch' || o.e.touches)) return;
+            if (currentMode === 'select' || currentMode === 'drawPen' || !o.e) return;
+            const p = canvas.getPointer(o.e);
+
+            if (currentMode === 'drawPlayerTag') {
+                const fs = Math.max(16, currentSize * 0.7); const isR = (p.x > canvas.width / 2); const dir = isR ? -1 : 1;
+                const text = new fabric.IText('(NR) PLAYER', { fontSize: fs, fill: currentColor, fontFamily: 'S-CoreDream-6Bold', originX: isR ? 'right' : 'left', originY: 'bottom', top: 4, shadow: broadcastShadow });
+                const line = new fabric.Path([['M', -dir * 18, 28], ['L', 0, 0], ['L', dir * (text.width + 5), 0]], { fill: '', stroke: currentColor, strokeWidth: 3, selectable: false });
+                const tagGroup = new fabric.Group([line, text], { left: p.x, top: p.y, originX: isR ? 'right' : 'left', originY: 'top', selectable: true, shadow: broadcastShadow, isPlayerTag: true, side: isR ? 'R' : 'L' });
+                canvas.add(tagGroup); canvas.setActiveObject(tagGroup); setMode('select'); return;
+            }
+            if ((currentMode === 'drawPolyline' || currentMode === 'drawPolygon') && activePoints.length > 0) { const lastPt = activePoints[activePoints.length - 1]; const dist = Math.sqrt(Math.pow(p.x - lastPt.left, 2) + Math.pow(p.y - lastPt.top, 2)); if (dist < 20) return; }
+
+            if (currentMode === 'drawSpot') {
+                canvas.add(new fabric.Ellipse({ left: p.x, top: p.y, rx: currentSize, ry: currentSize * 0.4, fill: hexToMutedRgba(currentColor, currentOpacity), stroke: getStrokeGradient(currentColor), strokeWidth: 4, originX: 'center', originY: 'center', shadow: new fabric.Shadow({ color: currentColor, blur: 20 }) }));
+            }
+            else if (currentMode === 'drawArrow' || currentMode === 'drawCurve') {
+                isDrawing = true; startPoint = p;
+                activeObj = new fabric.Line([p.x, p.y, p.x, p.y], { stroke: currentColor, strokeWidth: 2, strokeDashArray: [5, 5], opacity: 0.5, selectable: false });
+                canvas.add(activeObj);
+            }
+            else if (currentMode === 'drawPolyline') {
+                let n;
+                if (isSpotMode) n = new fabric.Ellipse({ left: p.x, top: p.y, rx: currentSize, ry: currentSize * 0.4, fill: hexToMutedRgba(currentColor, currentOpacity), stroke: getStrokeGradient(currentColor), strokeWidth: 3, originX: 'center', originY: 'center', selectable: false, shadow: new fabric.Shadow({ color: currentColor, blur: 15 }) }); else n = new fabric.Circle({ radius: 4, fill: currentColor, left: p.x, top: p.y, originX: 'center', originY: 'center', selectable: false });
+                activePoints.push(n); pointArray.push({ x: p.x, y: p.y }); componentArray.push(n); canvas.add(n);
+                if (pointArray.length > 1) {
+                    const prevNode = activePoints[activePoints.length - 2]; const currNode = activePoints[activePoints.length - 1]; let startX = prevNode.left, startY = prevNode.top; let endX = currNode.left, endY = currNode.top;
+                    if (isSpotMode) { const startOff = getEllipseOffset(prevNode, endX, endY, currentSize, currentSize * 0.4); const endOff = getEllipseOffset(currNode, startX, startY, currentSize, currentSize * 0.4); startX = startOff.x; startY = startOff.y; endX = endOff.x; endY = endOff.y; }
+                    const line = new fabric.Line([startX, startY, endX, endY], { stroke: currentColor, strokeWidth: 3, strokeLineCap: 'round', shadow: broadcastShadow, selectable: false, evented: false, strokeDashArray: typeof isDashed !== 'undefined' && isDashed ? [10, 5] : false }); activeLines.push(line); componentArray.push(line); canvas.add(line); canvas.sendToBack(line);
+                }
+                const finishBtn = document.getElementById('btn-finish');
+                if (finishBtn) finishBtn.classList.add('show');
+            }
+            else if (currentMode === 'drawPolygon') {
+                const c = new fabric.Circle({ radius: 4, fill: currentColor, left: p.x, top: p.y, originX: 'center', originY: 'center', selectable: false }); activePoints.push(c); pointArray.push({ x: p.x, y: p.y }); canvas.add(c);
+                if (pointArray.length > 1) { const l = new fabric.Line([pointArray[pointArray.length - 2].x, pointArray[pointArray.length - 2].y, pointArray[pointArray.length - 1].x, pointArray[pointArray.length - 1].y], { stroke: currentColor, strokeWidth: 2, strokeDashArray: [5, 5], selectable: false }); activeLines.push(l); canvas.add(l); }
+                const finishBtn = document.getElementById('btn-finish'); if (finishBtn) finishBtn.classList.add('show');
+            }
+        });
+
+        canvas.on('mouse:move', o => { if (isDrawing && (currentMode === 'drawArrow' || currentMode === 'drawCurve')) { activeObj.set({ x2: canvas.getPointer(o.e).x, y2: canvas.getPointer(o.e).y }); canvas.renderAll(); } });
+
+        canvas.on('mouse:up', o => {
+            if ((currentMode === 'drawArrow' || currentMode === 'drawCurve') && isDrawing) {
+                isDrawing = false; const end = canvas.getPointer(o.e); canvas.remove(activeObj);
+                if (currentMode === 'drawArrow') {
+                    createArrow(startPoint, end);
+                } else {
+                    const mid = { x: (startPoint.x + end.x) / 2, y: (startPoint.y + end.y) / 2 }; const cp = { x: mid.x, y: mid.y - 50 };
+                    const curve = new fabric.CurvedArrow(startPoint, cp, end, { stroke: currentColor, strokeWidth: 4, headSize: currentSize, shadow: broadcastShadow, strokeDashArray: typeof isDashed !== 'undefined' && isDashed ? [10, 5] : false, objectCaching: false }); canvas.add(curve); canvas.setActiveObject(curve);
+                }
+                setMode('select');
+            }
+        });
 
         canvas.on('mouse:dblclick', e => {
             if (e.target && e.target.isPlayerTag) {
