@@ -13,6 +13,13 @@
       "video": "https://youtu.be/Lp44oVNdT_E",
       "data": "./data/M06_IndvsJpn.xml",
       "date": "2026-02-26"
+    },
+    {
+      "title": "M01_JPNvsIND",
+      "competition": "2026_WomensQulifier",
+      "video": "https://www.youtube.com/watch?v=O9IFnzFO_Uo",
+      "data": "./data/2026_WomensQulifier/M01_JPNvsIND.xml",
+      "date": "2026-02-26"
     }
   ]
 }
