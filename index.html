@@ -2470,7 +2470,7 @@
         function clearAll() { if (!canvas) return; if (confirm("모두 삭제할까요?")) canvas.clear(); }
         function resetDrawing() { pointArray = []; activePoints = []; activeLines = []; componentArray = []; isDrawing = false; document.getElementById('btn-finish').classList.remove('show'); }
         function formatTime(s) { if (isNaN(s) || !isFinite(s)) return "0:00"; const m = Math.floor(s / 60); const sec = Math.floor(s % 60); return `${m}:${sec < 10 ? '0' + sec : sec}`; }
-        function jumpToTime(s) { const t = s + timeOffset; if (currentMediaType === 'youtube' && isYtReady) ytPlayer.seekTo(t, true); else if (currentMediaType === 'local') localVideo.currentTime = t; }
+        function jumpToTime(s) { const t = s + timeOffset; if (currentMediaType === 'youtube' && isYtReady) ytPlayer.seekTo(t, true); else if (currentMediaType === 'local') { const v = document.getElementById('local-video'); if (v) v.currentTime = t; } }
         function adjustSync(v) { timeOffset += v; document.getElementById('syncDisplay').innerText = `Sync: ${timeOffset.toFixed(1)}s`; }
         function toggleHelp() { const m = document.getElementById('helpModal'); m.style.display = m.style.display === 'flex' ? 'none' : 'flex'; }
 
