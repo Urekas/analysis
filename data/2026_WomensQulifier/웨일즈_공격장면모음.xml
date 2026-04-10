@@ -1,0 +1,943 @@
+<?xml version="1.0" ?>
+<file>
+  <ALL_INSTANCES>
+    <instance>
+      <ID>1</ID>
+      <start>0.0</start>
+      <end>17.882405000666495</end>
+      <code>풀프레스</code>
+      <label>
+        <text>25Y entry</text>
+      </label>
+      <label>
+        <text>우_100</text>
+      </label>
+      <label>
+        <text>풀프레스</text>
+      </label>
+      <label>
+        <text>웨일즈  0 - 스코틀랜드 0, 1쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>2</ID>
+      <start>17.882405000666495</start>
+      <end>42.72894445933298</end>
+      <code>풀프레스</code>
+      <label>
+        <text>우_100</text>
+      </label>
+      <label>
+        <text>풀프레스</text>
+      </label>
+      <label>
+        <text>웨일즈  0 - 스코틀랜드 0, 2쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>3</ID>
+      <start>42.72894445933298</start>
+      <end>76.76578600133325</end>
+      <code>풀프레스</code>
+      <label>
+        <text>25Y entry</text>
+      </label>
+      <label>
+        <text>풀프레스</text>
+      </label>
+      <label>
+        <text>웨일즈  0 - 스코틀랜드 1, 3쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>4</ID>
+      <start>76.76578600133325</start>
+      <end>96.3794645433336</end>
+      <code>풀프레스</code>
+      <label>
+        <text>풀프레스</text>
+      </label>
+      <label>
+        <text>웨일즈  0 - 스코틀랜드 1, 3쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>5</ID>
+      <start>96.3794645433336</start>
+      <end>106.85194087700165</end>
+      <code>풀프레스</code>
+      <label>
+        <text>풀프레스</text>
+      </label>
+      <label>
+        <text>웨일즈  0 - 스코틀랜드 1, 4쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>6</ID>
+      <start>106.85194087700165</start>
+      <end>123.74737491933502</end>
+      <code>풀프레스</code>
+      <label>
+        <text>CE</text>
+      </label>
+      <label>
+        <text>중_75</text>
+      </label>
+      <label>
+        <text>풀프레스</text>
+      </label>
+      <label>
+        <text>웨일즈  0 - 스코틀랜드 1, 4쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>7</ID>
+      <start>123.74737491933502</start>
+      <end>143.185257378335</end>
+      <code>풀프레스</code>
+      <label>
+        <text>우_75</text>
+      </label>
+      <label>
+        <text>풀프레스</text>
+      </label>
+      <label>
+        <text>웨일즈  0 - 스코틀랜드 0, 1쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>8</ID>
+      <start>143.185257378335</start>
+      <end>155.97786650333478</end>
+      <code>하프프레스</code>
+      <label>
+        <text>좌_50</text>
+      </label>
+      <label>
+        <text>하프프레스</text>
+      </label>
+      <label>
+        <text>웨일즈  0 - 스코틀랜드 0, 1쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>9</ID>
+      <start>155.97786650333478</start>
+      <end>166.40278921233516</end>
+      <code>하프프레스</code>
+      <label>
+        <text>하프프레스</text>
+      </label>
+      <label>
+        <text>웨일즈  0 - 스코틀랜드 0, 2쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>10</ID>
+      <start>166.40278921233516</start>
+      <end>188.24411300433462</end>
+      <code>하프프레스</code>
+      <label>
+        <text>하프프레스</text>
+      </label>
+      <label>
+        <text>웨일즈  0 - 스코틀랜드 1, 2쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>11</ID>
+      <start>188.24411300433462</start>
+      <end>201.46856012933466</end>
+      <code>웨일즈 TEAM</code>
+      <label>
+        <text>25Y entry, 25Y entry, CE</text>
+      </label>
+      <label>
+        <text>중_25</text>
+      </label>
+      <label>
+        <text>웨일즈  0 - 스코틀랜드 0, 0쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>12</ID>
+      <start>201.46856012933466</start>
+      <end>212.7458977546682</end>
+      <code>웨일즈 TEAM</code>
+      <label>
+        <text>25Y entry, CE</text>
+      </label>
+      <label>
+        <text>좌_25</text>
+      </label>
+      <label>
+        <text>속공</text>
+      </label>
+      <label>
+        <text>웨일즈  0 - 스코틀랜드 0, 1쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>13</ID>
+      <start>212.7458977546682</start>
+      <end>225.82621121333494</end>
+      <code>웨일즈 TEAM</code>
+      <label>
+        <text>25Y entry, CE</text>
+      </label>
+      <label>
+        <text>좌_25</text>
+      </label>
+      <label>
+        <text>웨일즈  0 - 스코틀랜드 0, 1쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>14</ID>
+      <start>225.82621121333494</start>
+      <end>239.33005483900178</end>
+      <code>웨일즈 TEAM</code>
+      <label>
+        <text>25Y entry, CE</text>
+      </label>
+      <label>
+        <text>우_25</text>
+      </label>
+      <label>
+        <text>속공</text>
+      </label>
+      <label>
+        <text>웨일즈  0 - 스코틀랜드 0, 1쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>15</ID>
+      <start>239.33005483900178</start>
+      <end>254.45781363066834</end>
+      <code>웨일즈 TEAM</code>
+      <label>
+        <text>CE</text>
+      </label>
+      <label>
+        <text>좌_25</text>
+      </label>
+      <label>
+        <text>웨일즈  0 - 스코틀랜드 1, 2쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>16</ID>
+      <start>254.45781363066834</start>
+      <end>269.5882902976679</end>
+      <code>웨일즈 TEAM</code>
+      <label>
+        <text>25Y entry, CE, PC</text>
+      </label>
+      <label>
+        <text>좌_25</text>
+      </label>
+      <label>
+        <text>속공</text>
+      </label>
+      <label>
+        <text>웨일즈  0 - 스코틀랜드 1, 2쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>17</ID>
+      <start>269.5882902976679</start>
+      <end>280.7946493400015</end>
+      <code>웨일즈 TEAM</code>
+      <label>
+        <text>25Y entry, CE</text>
+      </label>
+      <label>
+        <text>우_25</text>
+      </label>
+      <label>
+        <text>웨일즈  0 - 스코틀랜드 1, 3쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>18</ID>
+      <start>280.7946493400015</start>
+      <end>292.2043677566682</end>
+      <code>웨일즈 TEAM</code>
+      <label>
+        <text>25Y entry, CE, 25Y entry</text>
+      </label>
+      <label>
+        <text>중_25</text>
+      </label>
+      <label>
+        <text>속공</text>
+      </label>
+      <label>
+        <text>웨일즈  0 - 스코틀랜드 1, 3쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>19</ID>
+      <start>292.2043677566682</start>
+      <end>298.6392715903368</end>
+      <code>웨일즈 TEAM</code>
+      <label>
+        <text>25Y entry, CE</text>
+      </label>
+      <label>
+        <text>우_25</text>
+      </label>
+      <label>
+        <text>웨일즈  0 - 스코틀랜드 1, 4쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>20</ID>
+      <start>298.6392715903368</start>
+      <end>312.5347056326702</end>
+      <code>풀프레스</code>
+      <label>
+        <text>CE</text>
+      </label>
+      <label>
+        <text>중_75</text>
+      </label>
+      <label>
+        <text>풀프레스</text>
+      </label>
+      <label>
+        <text>웨일즈  0 - 스코틀랜드 1, 4쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>21</ID>
+      <start>312.5347056326702</start>
+      <end>324.38760238300364</end>
+      <code>웨일즈 페널티코너</code>
+      <label>
+        <text>웨일즈  0 - 스코틀랜드 1, 2쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>22</ID>
+      <start>324.38760238300364</start>
+      <end>342.99351734233954</end>
+      <code>하프프레스</code>
+      <label>
+        <text>25Y entry, 25Y entry</text>
+      </label>
+      <label>
+        <text>하프프레스</text>
+      </label>
+      <label>
+        <text>우루과이 0 - 웨일즈 0, 1쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>23</ID>
+      <start>342.99351734233954</start>
+      <end>363.8947806090079</end>
+      <code>하프프레스</code>
+      <label>
+        <text>25Y entry</text>
+      </label>
+      <label>
+        <text>하프프레스</text>
+      </label>
+      <label>
+        <text>우루과이 0 - 웨일즈 1, 1쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>24</ID>
+      <start>363.8947806090079</start>
+      <end>389.9347806090079</end>
+      <code>하프프레스</code>
+      <label>
+        <text>하프프레스</text>
+      </label>
+      <label>
+        <text>우루과이 0 - 웨일즈 1, 1쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>25</ID>
+      <start>389.9347806090079</start>
+      <end>423.33478060900774</end>
+      <code>하프프레스</code>
+      <label>
+        <text>하프프레스</text>
+      </label>
+      <label>
+        <text>우루과이 0 - 웨일즈 1, 1쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>26</ID>
+      <start>423.33478060900774</start>
+      <end>441.05478060900776</end>
+      <code>하프프레스</code>
+      <label>
+        <text>25Y entry</text>
+      </label>
+      <label>
+        <text>하프프레스</text>
+      </label>
+      <label>
+        <text>우루과이 0 - 웨일즈 1, 1쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>27</ID>
+      <start>441.05478060900776</start>
+      <end>458.87557994149046</end>
+      <code>하프프레스</code>
+      <label>
+        <text>하프프레스</text>
+      </label>
+      <label>
+        <text>우루과이 0 - 웨일즈 1, 1쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>28</ID>
+      <start>458.87557994149046</start>
+      <end>470.3715795588375</end>
+      <code>하프프레스</code>
+      <label>
+        <text>하프프레스</text>
+      </label>
+      <label>
+        <text>우루과이 0 - 웨일즈 1, 1쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>29</ID>
+      <start>470.3715795588375</start>
+      <end>482.83557974307786</end>
+      <code>하프프레스</code>
+      <label>
+        <text>하프프레스</text>
+      </label>
+      <label>
+        <text>우루과이 0 - 웨일즈 1, 1쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>30</ID>
+      <start>482.83557974307786</start>
+      <end>500.8323800350278</end>
+      <code>하프프레스</code>
+      <label>
+        <text>CE</text>
+      </label>
+      <label>
+        <text>하프프레스</text>
+      </label>
+      <label>
+        <text>우루과이 0 - 웨일즈 1, 1쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>31</ID>
+      <start>500.8323800350278</start>
+      <end>530.2323800350277</end>
+      <code>하프프레스</code>
+      <label>
+        <text>CE</text>
+      </label>
+      <label>
+        <text>중_25</text>
+      </label>
+      <label>
+        <text>하프프레스</text>
+      </label>
+      <label>
+        <text>우루과이 0 - 웨일즈 1, 1쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>32</ID>
+      <start>530.2323800350277</start>
+      <end>550.6723800350278</end>
+      <code>하프프레스</code>
+      <label>
+        <text>하프프레스</text>
+      </label>
+      <label>
+        <text>우루과이 0 - 웨일즈 1, 1쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>33</ID>
+      <start>550.6723800350278</start>
+      <end>576.0739163273657</end>
+      <code>풀프레스</code>
+      <label>
+        <text>25Y entry</text>
+      </label>
+      <label>
+        <text>우_75</text>
+      </label>
+      <label>
+        <text>풀프레스</text>
+      </label>
+      <label>
+        <text>우루과이 0 - 웨일즈 0, 1쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>34</ID>
+      <start>576.0739163273657</start>
+      <end>602.6772496606992</end>
+      <code>풀프레스</code>
+      <label>
+        <text>풀프레스</text>
+      </label>
+      <label>
+        <text>우루과이 0 - 웨일즈 1, 1쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>35</ID>
+      <start>602.6772496606992</start>
+      <end>631.7572496606994</end>
+      <code>풀프레스</code>
+      <label>
+        <text>CE</text>
+      </label>
+      <label>
+        <text>풀프레스</text>
+      </label>
+      <label>
+        <text>우루과이 0 - 웨일즈 1, 1쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>36</ID>
+      <start>631.7572496606994</start>
+      <end>655.8772495614929</end>
+      <code>풀프레스</code>
+      <label>
+        <text>풀프레스</text>
+      </label>
+      <label>
+        <text>우루과이 0 - 웨일즈 1, 1쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>37</ID>
+      <start>655.8772495614929</start>
+      <end>669.922049064044</end>
+      <code>풀프레스</code>
+      <label>
+        <text>풀프레스</text>
+      </label>
+      <label>
+        <text>우루과이 0 - 웨일즈 1, 1쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>38</ID>
+      <start>669.922049064044</start>
+      <end>683.589248583602</end>
+      <code>풀프레스</code>
+      <label>
+        <text>풀프레스</text>
+      </label>
+      <label>
+        <text>우루과이 0 - 웨일즈 1, 1쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>39</ID>
+      <start>683.589248583602</start>
+      <end>694.9908482052005</end>
+      <code>풀프레스</code>
+      <label>
+        <text>풀프레스</text>
+      </label>
+      <label>
+        <text>우루과이 0 - 웨일즈 1, 1쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>40</ID>
+      <start>694.9908482052005</start>
+      <end>716.9908482052005</end>
+      <code>웨일즈 슈팅서클 진입</code>
+      <label>
+        <text>중_25</text>
+      </label>
+      <label>
+        <text>우루과이 0 - 웨일즈 0, 1쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>41</ID>
+      <start>716.9908482052005</start>
+      <end>738.9018465802072</end>
+      <code>웨일즈 슈팅서클 진입</code>
+      <label>
+        <text>GOAL</text>
+      </label>
+      <label>
+        <text>우_25</text>
+      </label>
+      <label>
+        <text>우루과이 0 - 웨일즈 0, 1쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>42</ID>
+      <start>738.9018465802072</start>
+      <end>760.9018465802072</end>
+      <code>웨일즈 슈팅서클 진입</code>
+      <label>
+        <text>우_25, 우_25</text>
+      </label>
+      <label>
+        <text>우루과이 0 - 웨일즈 1, 1쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>43</ID>
+      <start>760.9018465802072</start>
+      <end>782.9018465802072</end>
+      <code>웨일즈 슈팅서클 진입</code>
+      <label>
+        <text>우_25</text>
+      </label>
+      <label>
+        <text>속공</text>
+      </label>
+      <label>
+        <text>우루과이 0 - 웨일즈 1, 1쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>44</ID>
+      <start>782.9018465802072</start>
+      <end>804.9018465802072</end>
+      <code>웨일즈 슈팅서클 진입</code>
+    </instance>
+    <instance>
+      <ID>45</ID>
+      <start>804.9018465802072</start>
+      <end>826.9018465802072</end>
+      <code>웨일즈 슈팅서클 진입</code>
+    </instance>
+    <instance>
+      <ID>46</ID>
+      <start>826.9018465802072</start>
+      <end>848.9018465802072</end>
+      <code>웨일즈 슈팅서클 진입</code>
+    </instance>
+    <instance>
+      <ID>47</ID>
+      <start>848.9018465802072</start>
+      <end>870.9018465802072</end>
+      <code>웨일즈 슈팅서클 진입</code>
+    </instance>
+    <instance>
+      <ID>48</ID>
+      <start>870.9018465802072</start>
+      <end>892.9018465802072</end>
+      <code>웨일즈 슈팅서클 진입</code>
+    </instance>
+    <instance>
+      <ID>49</ID>
+      <start>892.9018465802072</start>
+      <end>914.9018465802072</end>
+      <code>웨일즈 슈팅서클 진입</code>
+    </instance>
+    <instance>
+      <ID>50</ID>
+      <start>914.9018465802072</start>
+      <end>936.9018465802072</end>
+      <code>웨일즈 슈팅서클 진입</code>
+    </instance>
+    <instance>
+      <ID>51</ID>
+      <start>936.9018465802072</start>
+      <end>958.9018465802072</end>
+      <code>웨일즈 슈팅서클 진입</code>
+    </instance>
+    <instance>
+      <ID>52</ID>
+      <start>958.9018465802072</start>
+      <end>980.9018465802072</end>
+      <code>웨일즈 슈팅서클 진입</code>
+    </instance>
+    <instance>
+      <ID>53</ID>
+      <start>980.9018465802072</start>
+      <end>1002.9018465802072</end>
+      <code>웨일즈 슈팅서클 진입</code>
+    </instance>
+    <instance>
+      <ID>54</ID>
+      <start>1002.9018465802072</start>
+      <end>1024.9018465802073</end>
+      <code>웨일즈 슈팅서클 진입</code>
+    </instance>
+    <instance>
+      <ID>55</ID>
+      <start>1024.9018465802073</start>
+      <end>1040.9018465802073</end>
+      <code>웨일즈 득점</code>
+    </instance>
+    <instance>
+      <ID>56</ID>
+      <start>1040.9018465802073</start>
+      <end>1056.9018465802073</end>
+      <code>웨일즈 득점</code>
+    </instance>
+    <instance>
+      <ID>57</ID>
+      <start>1056.9018465802073</start>
+      <end>1064.8053139128765</end>
+      <code>웨일즈 페널티코너</code>
+      <label>
+        <text>우루과이 0 - 웨일즈 0, 1쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>58</ID>
+      <start>1064.8053139128765</start>
+      <end>1074.7085516222091</end>
+      <code>웨일즈 페널티코너</code>
+      <label>
+        <text>우루과이 0 - 웨일즈 0, 1쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>59</ID>
+      <start>1074.7085516222091</start>
+      <end>1086.1869511496038</end>
+      <code>웨일즈 페널티코너</code>
+      <label>
+        <text>25Y entry</text>
+      </label>
+      <label>
+        <text>우루과이 0 - 웨일즈 1, 1쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>60</ID>
+      <start>1086.1869511496038</start>
+      <end>1094.758151296996</end>
+      <code>웨일즈 페널티코너</code>
+      <label>
+        <text>CE</text>
+      </label>
+      <label>
+        <text>우루과이 0 - 웨일즈 1, 1쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>61</ID>
+      <start>1094.758151296996</start>
+      <end>1104.0573514585608</end>
+      <code>웨일즈 페널티코너</code>
+      <label>
+        <text>CE</text>
+      </label>
+      <label>
+        <text>우루과이 0 - 웨일즈 2, 1쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>62</ID>
+      <start>1104.0573514585608</start>
+      <end>1147.6806882502292</end>
+      <code>풀프레스</code>
+      <label>
+        <text>풀프레스</text>
+      </label>
+      <label>
+        <text>웨일즈 0 - 인도 0, 1쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>63</ID>
+      <start>1147.6806882502292</start>
+      <end>1169.5280312085636</end>
+      <code>하프프레스</code>
+      <label>
+        <text>25Y entry</text>
+      </label>
+      <label>
+        <text>우_25</text>
+      </label>
+      <label>
+        <text>하프프레스</text>
+      </label>
+      <label>
+        <text>웨일즈 0 - 인도 0, 1쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>64</ID>
+      <start>1169.5280312085636</start>
+      <end>1184.4489611255633</end>
+      <code>풀프레스</code>
+      <label>
+        <text>풀프레스</text>
+      </label>
+      <label>
+        <text>웨일즈 2 - 인도 3, 4쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>65</ID>
+      <start>1184.4489611255633</start>
+      <end>1199.1575928755644</end>
+      <code>풀프레스</code>
+      <label>
+        <text>풀프레스</text>
+      </label>
+      <label>
+        <text>웨일즈 0 - 인도 3, 3쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>66</ID>
+      <start>1199.1575928755644</start>
+      <end>1218.1575928755644</end>
+      <code>웨일즈 슈팅서클 진입</code>
+      <label>
+        <text>SHOT, GOAL</text>
+      </label>
+      <label>
+        <text>우_25</text>
+      </label>
+      <label>
+        <text>웨일즈 0 - 인도 3, 3쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>67</ID>
+      <start>1218.1575928755644</start>
+      <end>1237.1575928755644</end>
+      <code>웨일즈 슈팅서클 진입</code>
+      <label>
+        <text>SHOT, GK_save</text>
+      </label>
+      <label>
+        <text>중_25</text>
+      </label>
+      <label>
+        <text>속공</text>
+      </label>
+      <label>
+        <text>웨일즈 1 - 인도 3, 3쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>68</ID>
+      <start>1237.1575928755644</start>
+      <end>1256.1575928755644</end>
+      <code>웨일즈 슈팅서클 진입</code>
+      <label>
+        <text>PC</text>
+      </label>
+      <label>
+        <text>중_25</text>
+      </label>
+      <label>
+        <text>웨일즈 2 - 인도 3, 4쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>69</ID>
+      <start>1256.1575928755644</start>
+      <end>1275.1575928755644</end>
+      <code>웨일즈 슈팅서클 진입</code>
+      <label>
+        <text>좌_25, 좌_25</text>
+      </label>
+      <label>
+        <text>웨일즈 2 - 인도 4, 4쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>70</ID>
+      <start>1275.1575928755644</start>
+      <end>1295.1575928755644</end>
+      <code>웨일즈 득점</code>
+      <label>
+        <text>웨일즈 0 - 인도 3, 3쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>71</ID>
+      <start>1295.1575928755644</start>
+      <end>1305.7100885012337</end>
+      <code>웨일즈 페널티코너</code>
+      <label>
+        <text>웨일즈 0 - 인도 1, 2쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>72</ID>
+      <start>1305.7100885012337</start>
+      <end>1319.7080116269012</end>
+      <code>웨일즈 페널티코너</code>
+      <label>
+        <text>25Y entry</text>
+      </label>
+      <label>
+        <text>웨일즈 0 - 인도 1, 2쿼터</text>
+      </label>
+    </instance>
+    <instance>
+      <ID>73</ID>
+      <start>1319.7080116269012</start>
+      <end>1329.9070311272344</end>
+      <code>웨일즈 페널티코너</code>
+      <label>
+        <text>웨일즈 0 - 인도 2, 3쿼터</text>
+      </label>
+    </instance>
+  </ALL_INSTANCES>
+  <ROWS>
+    <row>
+      <code>풀프레스</code>
+      <R>59754</R>
+      <G>59754</G>
+      <B>59754</B>
+    </row>
+    <row>
+      <code>하프프레스</code>
+      <R>59754</R>
+      <G>59754</G>
+      <B>59754</B>
+    </row>
+    <row>
+      <code>웨일즈 TEAM</code>
+      <R>59754</R>
+      <G>59754</G>
+      <B>59754</B>
+    </row>
+    <row>
+      <code>웨일즈 페널티코너</code>
+      <R>59754</R>
+      <G>59754</G>
+      <B>59754</B>
+    </row>
+    <row>
+      <code>웨일즈 슈팅서클 진입</code>
+      <R>59754</R>
+      <G>59754</G>
+      <B>59754</B>
+    </row>
+    <row>
+      <code>웨일즈 득점</code>
+      <R>59754</R>
+      <G>59754</G>
+      <B>59754</B>
+    </row>
+  </ROWS>
+</file>

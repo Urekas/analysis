@@ -1,0 +1,2902 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Tactical Board - v123 Click Bug Fixed</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script async defer src="https://apis.google.com/js/api.js"></script>
+    <script async defer src="https://accounts.google.com/gsi/client"></script>
+
+    <style>
+        @font-face {
+            font-family: 'S-CoreDream-6Bold';
+            src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_six@1.2/S-CoreDream-6Bold.woff') format('woff');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        :root {
+            --bg-color: #1a1a1a;
+            --panel-bg: #2d2d2d;
+            --accent: #e74c3c;
+            --text: #eee;
+            --sidebar-width: 280px;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg-color);
+            color: var(--text);
+            font-family: 'S-CoreDream-6Bold', sans-serif;
+            overflow: hidden;
+            display: flex;
+            height: 100vh;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        input,
+        textarea,
+        [contenteditable] {
+            user-select: auto;
+            -webkit-user-select: auto;
+        }
+
+        /* 좌측 사이드바 */
+        .sidebar {
+            width: 80px;
+            background: var(--panel-bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 20px;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
+            z-index: 50;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 0;
+        }
+
+        .tool-btn {
+            width: 50px;
+            height: 50px;
+            margin-bottom: 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: transparent;
+            color: #aaa;
+            font-size: 1.4rem;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .tool-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .tool-btn.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+            box-shadow: 0 0 15px rgba(231, 76, 60, 0.4);
+        }
+
+        .tool-btn::after {
+            content: attr(data-shortcut);
+            position: absolute;
+            bottom: 2px;
+            right: 4px;
+            font-size: 0.6rem;
+            opacity: 0.5;
+            font-family: monospace;
+        }
+
+        .divider {
+            width: 40px;
+            height: 1px;
+            background: #444;
+            margin: 10px 0;
+            flex-shrink: 0;
+        }
+
+        /* 중앙 워크스페이스 */
+        .workspace {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #000;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .media-container {
+            flex: 1;
+            position: relative;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            background: #000;
+        }
+
+        #youtube-player {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        #local-video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            z-index: 1;
+            object-fit: contain;
+        }
+
+        .canvas-wrapper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 5;
+        }
+
+        /* 스크러버 */
+        .scrubber-area {
+            height: 50px;
+            width: 100%;
+            background: #111;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 0 20px;
+            box-sizing: border-box;
+            border-top: 1px solid #333;
+            z-index: 10;
+            flex-shrink: 0;
+        }
+
+        .scrubber-input {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 8px;
+            background: #444;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 0 15px;
+        }
+
+        .scrubber-input::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #e67e22;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+
+        .scrubber-btn {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            margin: 0 5px;
+            padding: 5px;
+            transition: 0.2s;
+        }
+
+        .scrubber-btn:hover {
+            color: var(--accent);
+        }
+
+        .version-display {
+            position: absolute;
+            bottom: 5px;
+            right: 15px;
+            color: #777;
+            font-size: 0.8rem;
+            z-index: 100;
+        }
+
+        .time-display {
+            font-family: monospace;
+            color: #ccc;
+            font-size: 0.9rem;
+            min-width: 100px;
+            text-align: center;
+        }
+
+        /* 하단 패널 */
+        .bottom-panel {
+            height: 70px;
+            width: 100%;
+            background: var(--panel-bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-top: 1px solid #444;
+            z-index: 20;
+            flex-shrink: 0;
+        }
+
+        .control-bar {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .color-dot {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: transform 0.2s;
+            position: relative;
+        }
+
+        .color-dot.selected {
+            border-color: white;
+            box-shadow: 0 0 0 2px var(--bg-color);
+            transform: scale(1.1);
+        }
+
+        .c-white {
+            background: #ffffff;
+        }
+
+        .c-red {
+            background: #e63946;
+        }
+
+        .c-yellow {
+            background: #ffbe0b;
+        }
+
+        .c-blue {
+            background: #3a86ff;
+        }
+
+        .c-green {
+            background: #2ecc71;
+        }
+
+        .c-black {
+            background: #000000;
+            border: 1px solid #555;
+        }
+
+        .slider-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 80px;
+            height: 5px;
+            background: #555;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: var(--accent);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .toggle-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            border: 1px solid #555;
+            background: #333;
+            color: #aaa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .toggle-btn.active {
+            background: #3498db;
+            color: white;
+            border-color: #3498db;
+        }
+
+        #status-msg {
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 25px;
+            border-radius: 30px;
+            font-size: 1rem;
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            z-index: 100;
+            pointer-events: none;
+            display: none;
+        }
+
+        #guide-msg {
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(231, 76, 60, 0.9);
+            color: white;
+            padding: 10px 25px;
+            border-radius: 30px;
+            font-size: 1rem;
+            font-weight: bold;
+            pointer-events: none;
+            display: none;
+            z-index: 100;
+        }
+
+        /* 우측 사이드바 */
+        .scene-sidebar {
+            width: var(--sidebar-width);
+            background: #222;
+            border-left: 1px solid #444;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            box-shadow: -2px 0 10px rgba(0, 0, 0, 0.5);
+            z-index: 30;
+            transition: width 0.3s ease;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .scene-sidebar.closed {
+            width: 0;
+        }
+
+        .sidebar-toggle-area {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 40;
+        }
+
+        .scene-toggle-btn {
+            width: 25px;
+            height: 50px;
+            background: #222;
+            border: 1px solid #444;
+            border-right: none;
+            border-radius: 10px 0 0 10px;
+            color: #aaa;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .sidebar-tabs {
+            display: flex;
+            border-bottom: 1px solid #444;
+            background: #2d2d2d;
+            min-width: 100%;
+            flex-shrink: 0;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 15px 0;
+            background: none;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-family: 'S-CoreDream-6Bold';
+        }
+
+        .tab-btn.active {
+            color: var(--accent);
+            border-bottom: 3px solid var(--accent);
+            background: #333;
+        }
+
+        .tab-content {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            display: none;
+            padding: 15px;
+            flex-direction: column;
+            gap: 10px;
+            box-sizing: border-box;
+        }
+
+        .tab-content.active {
+            display: flex;
+        }
+
+        /* 데이터 목록 */
+        .data-group {
+            margin-bottom: 8px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .data-group-header {
+            background: #3a3a3a;
+            padding: 10px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            color: #fff;
+            border: 1px solid #444;
+        }
+
+        .group-count {
+            background: var(--accent);
+            color: #fff;
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            margin-left: auto;
+        }
+
+        .data-group-content {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            padding-top: 5px;
+            overflow: hidden;
+        }
+
+        .data-item {
+            background: #2a2a2a;
+            padding: 10px 12px;
+            border-radius: 0 6px 6px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 3px solid #555;
+            cursor: default;
+        }
+
+        .data-item:hover {
+            border-left-color: var(--accent);
+            background: #333;
+        }
+
+        .scene-item {
+            background: #333;
+            padding: 12px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+            border: 1px solid transparent;
+        }
+
+        .scene-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            overflow: hidden;
+            flex: 1;
+            cursor: default;
+            padding: 0 5px;
+        }
+
+        .scene-time {
+            color: var(--accent);
+            font-size: 0.85rem;
+            font-family: monospace;
+            padding: 4px 8px;
+            background: rgba(231, 76, 60, 0.1);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+            width: fit-content;
+        }
+
+        .scene-time:hover {
+            background: rgba(231, 76, 60, 0.2);
+        }
+
+        .scene-del-btn {
+            color: #888;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            font-size: 1.2rem;
+        }
+
+        /* 매치 센터 계층 UI */
+        .comp-card {
+            background: #333;
+            padding: 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            border: 1px solid #555;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 8px;
+            transition: 0.2s;
+        }
+
+        .comp-card:hover {
+            border-color: var(--accent);
+            background: #3d3d3d;
+            transform: translateX(5px);
+        }
+
+        .match-card {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            border-left: 4px solid var(--accent);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            transition: 0.2s;
+        }
+
+        .match-card:hover {
+            background: #333;
+        }
+
+        .top-menu {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 15px;
+            z-index: 100;
+        }
+
+        .top-btn {
+            background: rgba(0, 0, 0, 0.6);
+            color: #ccc;
+            border: 1px solid #555;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-family: 'S-CoreDream-6Bold';
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 999;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+            /* 모달 내용이 넘칠 때 오버레이 자체도 스크롤 가능하게 */
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .modal-box {
+            background: #2d2d2d;
+            padding: 25px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 600px;
+            border: 1px solid #444;
+            position: relative;
+            max-height: 85vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            box-sizing: border-box;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: #aaa;
+            font-size: 1.8rem;
+            cursor: pointer;
+        }
+
+        .modal-header {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: var(--accent);
+            font-weight: bold;
+        }
+
+        .modal-tabs {
+            display: flex;
+            border-bottom: 1px solid #444;
+            margin-bottom: 15px;
+            gap: 10px;
+        }
+
+        .m-tab {
+            padding: 8px 15px;
+            cursor: pointer;
+            color: #888;
+            border-bottom: 2px solid transparent;
+        }
+
+        .m-tab.active {
+            color: var(--accent);
+            border-bottom: 2px solid var(--accent);
+        }
+
+        .m-content {
+            display: none;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #ddd;
+        }
+
+        .m-content.active {
+            display: block;
+        }
+
+        .shortcut-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #333;
+        }
+
+        .shortcut-input {
+            background: #111;
+            color: var(--accent);
+            border: 1px solid #555;
+            padding: 5px 10px;
+            border-radius: 5px;
+            width: 120px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .finish-btn {
+            color: #2ecc71;
+            border-color: #2ecc71;
+            display: none;
+        }
+
+        .finish-btn.show {
+            display: flex;
+        }
+
+        .admin-form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .form-input {
+            background: #111;
+            color: #fff;
+            border: 1px solid #444;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .btn-submit {
+            background: var(--accent);
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-submit:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+
+        /* 목록 관리 탭 버튼 CSS */
+        .manage-group {
+            margin-bottom: 10px;
+            background: #2a2a2a;
+            border-radius: 8px;
+            border: 1px solid #444;
+            overflow: hidden;
+        }
+
+        .manage-group-header {
+            background: #3a3a3a;
+            padding: 10px 15px;
+            font-weight: bold;
+            color: var(--accent);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .manage-match-item {
+            padding: 10px 15px;
+            border-top: 1px solid #444;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #333;
+        }
+
+        .manage-match-item:hover {
+            background: #3d3d3d;
+        }
+
+        .manage-btn {
+            background: #444;
+            border: none;
+            color: white;
+            padding: 5px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 4px;
+            font-size: 0.8rem;
+            transition: 0.2s;
+        }
+
+        .manage-btn:hover {
+            background: #555;
+        }
+
+        .manage-btn.edit {
+            background: #3498db;
+        }
+
+        .manage-btn.del {
+            background: #e74c3c;
+        }
+
+        .mobile-only {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+
+            .mobile-only {
+                display: inline-block;
+            }
+
+            .sidebar {
+                display: none !important;
+            }
+
+            .sidebar.mobile-show {
+                display: flex !important;
+                position: fixed;
+                left: 0;
+                top: 0;
+                height: 100vh;
+                z-index: 2000;
+                background: rgba(30, 30, 30, 0.95);
+                backdrop-filter: blur(5px);
+                border-right: 1px solid #444;
+            }
+
+            .bottom-panel {
+                display: none !important;
+            }
+
+            .workspace {
+                flex: none;
+                height: 42vh; /* 탑메뉴 포함하여 높이 조금 더 확보 */
+            }
+
+            .scene-sidebar {
+                width: 100%;
+                flex: 1; /* 나머지 영역 모두 차지 */
+                height: auto;
+                border-left: none;
+                border-top: 2px solid #333;
+                z-index: 1000;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch; /* 스크롤 최적화 */
+            }
+
+            .scene-sidebar.closed {
+                /* 모바일 세로모드에서는 항상 보이도록 하거나, 토글 방식을 바꿈 */
+                display: flex !important;
+            }
+
+            .sidebar-toggle-area {
+                display: none !important; /* 모바일 세로에서는 중앙 토글 비활성화 */
+            }
+
+            .top-menu {
+                position: static !important;
+                background: transparent;
+                padding: 8px;
+                gap: 6px;
+                flex-wrap: wrap;
+                justify-content: center;
+                border-bottom: 1px solid #333;
+                z-index: 100;
+            }
+
+            .top-btn {
+                padding: 10px 12px;
+                font-size: 0.85rem;
+                flex: 1 1 auto;
+                justify-content: center;
+                white-space: nowrap;
+            }
+
+            .tab-btn {
+                padding: 10px 0; /* 터치 탭 높이 다이어트 */
+            }
+
+            .version-display {
+                display: none; /* 버전을 가려 영상 가시성 확보 */
+            }
+
+            /* 모바일 세로: 스크러버를 화면 하단 고정 오버레이로 전환 */
+            #videoScrubber {
+                position: fixed !important;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                height: 56px;
+                z-index: 500;
+                background: rgba(10, 10, 10, 0.88) !important;
+                backdrop-filter: blur(6px);
+                -webkit-backdrop-filter: blur(6px);
+                border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+                /* 기본은 숨김: 아래로 내려가 있음 */
+                transform: translateY(100%);
+                opacity: 0;
+                transition: transform 0.25s ease, opacity 0.25s ease;
+                display: flex !important;
+                /* 항상 flex로 유지, visibility로 제어 */
+                visibility: hidden;
+            }
+
+            /* 터치 시 토글되는 클래스 */
+            #videoScrubber.scrubber-visible {
+                transform: translateY(0);
+                opacity: 1;
+                visibility: visible;
+            }
+
+            /* 매치 센터 (Match Center) 모바일 최적화 */
+            .modal-box {
+                width: 95%;
+                padding: 15px;
+                max-height: 95vh;
+            }
+            .form-row {
+                grid-template-columns: 1fr !important;
+            }
+            .m-tab {
+                font-size: 0.85rem;
+                padding: 8px;
+            }
+        }
+
+        @media (max-width: 950px) and (orientation: landscape) {
+            body {
+                flex-direction: row;
+                overflow: hidden;
+            }
+
+            .mobile-only {
+                display: inline-block;
+            }
+
+            .sidebar,
+            .bottom-panel {
+                display: none !important;
+            }
+
+            .workspace {
+                flex: 1;
+                height: 100vh;
+                position: relative;
+            }
+
+            /* 가로 모드에서 데이터 패널 접었다 폈다 할 수 있게 처리 */
+            .scene-sidebar {
+                width: 320px;
+                height: 100vh;
+                position: absolute;
+                right: 0;
+                top: 0;
+                transition: transform 0.3s ease;
+                z-index: 1000;
+                border-left: 1px solid #333;
+            }
+
+            .scene-sidebar.closed {
+                width: 320px !important;
+                transform: translateX(100%);
+            }
+
+            /* 패널 열고 닫는 토글 버튼 위치 조정 */
+            .sidebar-toggle-area {
+                position: absolute;
+                right: 320px;
+                top: 50%;
+                transform: translateY(-50%);
+                z-index: 101;
+                width: 25px;
+                height: 50px;
+                background: #2a2a2a;
+                border: 1px solid #444;
+                border-right: none;
+                display: flex !important;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                border-radius: 5px 0 0 5px;
+                transition: right 0.3s ease;
+            }
+
+            body:has(.scene-sidebar.closed) .sidebar-toggle-area {
+                right: 0px;
+            }
+
+            /* 가로모드: 모달 오버레이를 상단 정렬 + 스크롤 허용 */
+            .modal-overlay {
+                align-items: flex-start;
+                padding: 10px 0;
+            }
+
+            /* 가로모드: 모달 박스 높이를 화면에 맞게 줄이고 내부 스크롤 */
+            .modal-box {
+                max-height: none;
+                width: 94%;
+                margin: auto;
+            }
+
+            /* 가로모드: 매치 센터 내 목록 영역 높이 제한 조정 */
+            #manage-list-container {
+                max-height: 200px !important;
+            }
+
+            /* 가로모드: m-content(탭 본문) 영역도 스크롤 허용 */
+            .m-content.active {
+                max-height: 55vh;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 🚀 전역 변수 선언부 -->
+    <script>
+        let canvas, ytPlayer, broadcastShadow;
+        let isYtReady = false, currentMediaType = 'none', eventList = [], timeOffset = 0.0;
+        let isDrawing = false, startPoint = null, activeObj = null, pointArray = [], activePoints = [], activeLines = [], componentArray = [];
+        let currentMode = 'select', currentColor = '#ffffff', currentSize = 40, currentOpacity = 0.2, isSpotMode = false, isPalmRejection = false, isDashed = false;
+        let isDraggingSlider = false, githubMatchesData = [], isVideoInteractive = false;
+        let savedScenes = [];
+
+        window.addEventListener('DOMContentLoaded', () => {
+            if (typeof fabric !== 'undefined') {
+                broadcastShadow = new fabric.Shadow({ color: 'rgba(0,0,0,0.8)', blur: 8, offsetX: 2, offsetY: 2 });
+                fabric.Object.prototype.set({
+                    transparentCorners: false,
+                    cornerColor: '#fff',
+                    cornerStrokeColor: '#000',
+                    cornerStyle: 'circle',
+                    shadow: broadcastShadow
+                });
+            }
+        });
+    </script>
+
+    <div class="sidebar">
+        <!-- 깃허브 매치 센터 버튼 -->
+        <button class="tool-btn" id="btn-github-center" style="background:#333; color:white; border:none;"
+            onclick="openMatchCenter()" title="Match Center"><i class="fa-brands fa-github"></i></button>
+        <div class="divider"></div>
+        <label for="imgInput" class="tool-btn" style="background:#2ecc71; color:white; border:none;" title="사진 열기"><i
+                class="fa-solid fa-image"></i></label>
+        <input type="file" id="imgInput" style="display:none;" accept="image/*">
+        <label for="videoInput" class="tool-btn" style="background:#3498db; color:white; border:none;"
+            title="파일 영상 열기"><i class="fa-solid fa-file-video"></i></label>
+        <input type="file" id="videoInput" style="display:none;" accept="video/*">
+        <label for="dataInput" class="tool-btn" style="background:#9b59b6; color:white; border:none;" title="데이터 열기"><i
+                class="fa-solid fa-file-lines"></i></label>
+        <input type="file" id="dataInput" style="display:none;" accept=".xml,.csv">
+        <button class="tool-btn" style="background:#e63946; color:white; border:none;" onclick="loadYoutubePrompt()"
+            title="유튜브 주소"><i class="fa-brands fa-youtube"></i></button>
+        <div class="divider"></div>
+        <!-- 영상 조작 모드 버튼 -->
+        <button class="tool-btn" id="btn-video-touch" onclick="toggleVideoInteraction()"
+            title="영상 조작 모드 (유튜브 추천영상 끄기)"><i class="fa-solid fa-hand-pointer"></i></button>
+        <div class="divider"></div>
+        <button class="tool-btn" onclick="togglePalm()" id="btn-palm" title="터치 방지"><i
+                class="fa-solid fa-hand-pointer"></i></button>
+        <div class="divider"></div>
+        <button class="tool-btn active" id="btn-select" onclick="setMode('select')" title="선택"><i
+                class="fa-solid fa-arrow-pointer"></i></button>
+        <button class="tool-btn" id="btn-drawPlayerTag" onclick="setMode('drawPlayerTag')" title="선수 태그"><i
+                class="fa-solid fa-tag"></i></button>
+        <button class="tool-btn" id="btn-drawPen" onclick="setMode('drawPen')" title="펜"><i
+                class="fa-solid fa-pen"></i></button>
+        <button class="tool-btn" id="btn-addText" onclick="addText()" title="텍스트"><i
+                class="fa-solid fa-font"></i></button>
+        <button class="tool-btn" id="btn-drawSpot" onclick="setMode('drawSpot')" title="스팟"><i
+                class="fa-regular fa-circle"></i></button>
+        <button class="tool-btn" id="btn-drawPolyline" onclick="setMode('drawPolyline')" title="다중 선"><i
+                class="fa-solid fa-share-nodes"></i></button>
+        <button class="tool-btn" id="btn-drawArrow" onclick="setMode('drawArrow')" title="화살표"><i
+                class="fa-solid fa-arrow-right-long"></i></button>
+        <button class="tool-btn" id="btn-drawCurve" onclick="setMode('drawCurve')" title="곡선"><i
+                class="fa-solid fa-arrow-turn-up"></i></button>
+        <button class="tool-btn" id="btn-drawPolygon" onclick="setMode('drawPolygon')" title="다각형"><i
+                class="fa-solid fa-draw-polygon"></i></button>
+        <button class="tool-btn finish-btn" id="btn-finish" onclick="completeDrawing()"><i
+                class="fa-solid fa-check"></i></button>
+        <div class="divider"></div>
+        <button class="tool-btn" style="color:#f1c40f;" onclick="saveScene()" title="장면 저장"><i
+                class="fa-solid fa-floppy-disk"></i></button>
+        <button class="tool-btn" id="btn-record" style="color:#e67e22;" onclick="startCleanRecording()" title="추출"><i
+                class="fa-solid fa-clapperboard"></i></button>
+        <div class="divider"></div>
+        <button class="tool-btn" id="btn-deleteObj" style="color:#e74c3c;" onclick="deleteObject()"
+            title="사용자 선택 지우기"><i class="fa-solid fa-trash"></i></button>
+        <button class="tool-btn" id="btn-clearAll" style="color:#ff6b6b;" onclick="clearAll()" title="전체 지우기"><i
+                class="fa-solid fa-eraser"></i></button>
+    </div>
+
+    <div class="workspace">
+        <div class="sidebar-toggle-area" onclick="toggleSceneSidebar()">
+            <div class="scene-toggle-btn"><i class="fa-solid fa-chevron-right" id="sceneToggleIcon"></i></div>
+        </div>
+        <div class="top-menu">
+            <button class="top-btn mobile-only" onclick="openMatchCenter()" style="color:var(--accent);"
+                title="GitHub 매치 센터"><i class="fa-brands fa-github"></i></button>
+            <button class="top-btn mobile-only" onclick="toggleMobileTools()" style="color:#e67e22;" title="드로잉 도구함"><i class="fa-solid fa-pen-ruler"></i> 도구</button>
+            <label for="videoInputMobile" class="top-btn mobile-only" style="color:#3498db; cursor:pointer;"
+                title="로컬 영상 열기"><i class="fa-solid fa-file-video"></i></label>
+            <input type="file" id="videoInputMobile" style="display:none;" accept="video/*">
+            <label for="dataInputMobile" class="top-btn mobile-only" style="color:#9b59b6; cursor:pointer;"
+                title="데이터(XML) 열기"><i class="fa-solid fa-file-lines"></i></label>
+            <input type="file" id="dataInputMobile" style="display:none;" accept=".xml,.csv">
+            <button class="top-btn" onclick="toggleLang()">KR | EN</button>
+            <button class="top-btn" onclick="toggleHelp()"><i class="fa-solid fa-gear"></i> 설정</button>
+        </div>
+        <div id="status-msg">미디어를 불러오세요.</div>
+        <div id="guide-msg">더블클릭하여 도형 완성</div>
+        <div class="media-container" id="mediaContainer">
+            <div id="youtube-player"></div>
+            <video id="local-video" playsinline crossOrigin="anonymous"></video>
+            <div class="canvas-wrapper" id="canvasWrapper"><canvas id="c"></canvas></div>
+            <div class="version-display">v124 (Mobile UX)</div>
+            <div id="skip-feedback" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.7); color:white; padding:15px 25px; border-radius:30px; font-size:1.5rem; font-weight:bold; pointer-events:none; opacity:0; transition:opacity 0.2s; z-index:100; display:flex; align-items:center; gap:10px;"></div>
+        </div>
+        <div class="scrubber-area" id="videoScrubber">
+            <button class="scrubber-btn" onclick="videoControl('rewind')" title="-5초 (←)"><i
+                    class="fa-solid fa-backward-step"></i></button>
+            <button class="scrubber-btn" onclick="videoControl('toggle')" id="btn-play-scrubber"
+                title="재생/정지 (Space)"><i class="fa-solid fa-play"></i></button>
+            <button class="scrubber-btn" onclick="videoControl('forward')" title="+5초 (→)"><i
+                    class="fa-solid fa-forward-step"></i></button>
+            <div class="time-display" id="timeDisplay" style="margin-left: 10px; min-width: 80px; text-align: center;">
+                0:00 / 0:00</div>
+            <input type="range" class="scrubber-input" id="timeSlider" min="0" max="100" value="0" step="0.1">
+        </div>
+        <div class="bottom-panel">
+            <div class="control-bar">
+                <div style="display:flex; gap:8px;">
+                    <div class="color-dot c-white selected" onclick="setColor('#ffffff', this)"></div>
+                    <div class="color-dot c-red" onclick="setColor('#e63946', this)"></div>
+                    <div class="color-dot c-yellow" onclick="setColor('#ffbe0b', this)"></div>
+                    <div class="color-dot c-blue" onclick="setColor('#3a86ff', this)"></div>
+                    <div class="color-dot c-green" onclick="setColor('#2ecc71', this)"></div>
+                    <div class="color-dot c-black" onclick="setColor('#000000', this)"></div>
+                </div>
+                <div style="width:1px; height:30px; background:#555;"></div>
+                <div class="slider-group" title="선 두께"><i class="fa-solid fa-lines-leaning"></i><input type="range"
+                        id="sizeSlider" min="10" max="100" value="40"></div>
+                <div class="slider-group" title="투명도"><i class="fa-solid fa-circle-half-stroke"></i><input type="range"
+                        id="opacitySlider" min="10" max="100" value="20"></div>
+                <div style="width:1px; height:30px; background:#555;"></div>
+                <div class="slider-group" title="재생 속도"><i class="fa-solid fa-gauge-high"></i><input type="range"
+                        id="speedSlider" min="0.25" max="2" step="0.25" value="1"><span id="speedVal"
+                        style="font-size:0.8rem; width:35px;">1.0x</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="scene-sidebar" id="sceneSidebar">
+        <div class="sidebar-tabs">
+            <button class="tab-btn active" id="tab-btn-scenes" onclick="openTab('tab-scenes')">장면</button>
+            <button class="tab-btn" id="tab-btn-data" onclick="openTab('tab-data')">데이터</button>
+        </div>
+        <div id="tab-scenes" class="tab-content active">
+            <div class="scene-list" id="sceneList"></div>
+        </div>
+        <div id="tab-data" class="tab-content">
+            <div class="control-box">
+                <select id="timeUnit" class="unit-select" onchange="renderDataList()">
+                    <option value="sec" selected>단위: 1초</option>
+                    <option value="ms">밀리초</option>
+                    <option value="cs">1/100초</option>
+                </select>
+                <div class="sync-control">
+                    <button class="sync-btn" onclick="adjustSync(-0.1)">-0.1s</button>
+                    <span class="sync-display" id="syncDisplay">Sync: 0.0s</span>
+                    <button class="sync-btn" onclick="adjustSync(0.1)">+0.1s</button>
+                </div>
+            </div>
+            <div id="dataList"></div>
+        </div>
+    </div>
+
+    <!-- GitHub 매치 센터 모달 -->
+    <div class="modal-overlay" id="matchCenterModal">
+        <div class="modal-box" style="max-width: 650px;">
+            <button class="close-btn" onclick="closeMatchCenter()">&times;</button>
+            <div class="modal-header">GitHub Match Center</div>
+            <div class="modal-tabs">
+                <div class="m-tab active" id="m-tab-list" onclick="switchMatchTab('list')">대회 목록</div>
+                <div class="m-tab" id="m-tab-admin" onclick="switchMatchTab('admin')">매치 등록</div>
+                <div class="m-tab" id="m-tab-manage" onclick="switchMatchTab('manage')">목록 관리 (수정/삭제)</div>
+            </div>
+
+            <!-- 리스트 보기 탭 -->
+            <div id="match-view-list" class="m-content active">
+                <div id="list-nav" style="margin-bottom:15px; display:none;">
+                    <button onclick="renderCompList()"
+                        style="background:#444; color:white; border:none; padding:8px 15px; border-radius:8px; cursor:pointer;"><i
+                            class="fa-solid fa-chevron-left"></i> 대회 목록으로</button>
+                </div>
+                <div id="match-loading" style="text-align:center; padding:20px; color:#aaa;">로딩 중...</div>
+                <div class="match-list" id="match-list-container"></div>
+                <div style="margin-top:20px; border-top:1px solid #444; padding-top:15px;">
+                    <input type="text" id="manifest-url"
+                        style="width:100%; background:#111; color:#fff; border:1px solid #555; padding:10px; border-radius:8px;"
+                        value="matches.json">
+                    <button onclick="loadGitHubManifest()"
+                        style="margin-top:10px; width:100%; padding:10px; background:var(--accent); color:white; border:none; cursor:pointer; font-weight:bold; border-radius:8px;">목록
+                        동기화</button>
+                </div>
+            </div>
+
+            <!-- 매치 추가(Admin) 탭 -->
+            <div id="match-view-admin" class="m-content">
+                <div class="admin-form">
+                    <div class="form-group"><label>GitHub PAT (새로 발급받아 입력하세요)</label><input type="password"
+                            id="gh-token" class="form-input" placeholder="ghp_..."></div>
+                    <div class="form-row" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                        <div class="form-group"><label>ID</label><input type="text" id="gh-owner" class="form-input"
+                                value="Urekas"></div>
+                        <div class="form-group"><label>Repo</label><input type="text" id="gh-repo" class="form-input"
+                                value="analysis"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>대회 이름</label>
+                        <select id="match-competition-select" class="form-input"
+                            onchange="toggleNewCompInput()"></select>
+                        <input type="text" id="match-competition-new" class="form-input" placeholder="새 대회 이름 (직접 입력)"
+                            style="display:none; margin-top:5px;">
+                    </div>
+                    <div class="form-group"><label>경기 제목</label><input type="text" id="match-title" class="form-input"
+                            placeholder="인도 vs 일본"></div>
+                    <div class="form-group"><label>유튜브 URL</label><input type="text" id="match-video" class="form-input"
+                            placeholder="URL 입력"></div>
+                    <div class="form-group"><label>XML 데이터 파일</label><input type="file" id="match-xml-file"
+                            accept=".xml" class="form-input"></div>
+                    <button onclick="uploadMatchToGitHub()" id="btn-gh-upload" class="btn-submit">새 경기 등록하기</button>
+                    <div id="upload-status"
+                        style="font-size:0.85rem; text-align:center; min-height:20px; margin-top:10px;"></div>
+                </div>
+            </div>
+
+            <!-- 목록 관리(Manage) 탭 -->
+            <div id="match-view-manage" class="m-content">
+                <div style="margin-bottom:10px; color:#aaa; font-size:0.85rem;">
+                    * 순서 변경(▲/▼), 수정(✏️), 삭제(🗑️) 후 반드시 하단의 <b>'변경사항 깃허브에 최종 저장'</b> 버튼을 누르세요.
+                </div>
+                <div id="manage-list-container" style="max-height: 350px; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-right:5px;"></div>
+                <button onclick="saveManifestToGitHub()" class="btn-submit"
+                    style="width: 100%; margin-top: 15px; background: #e67e22;"><i
+                        class="fa-solid fa-cloud-arrow-up"></i> 변경사항 깃허브에 최종 저장</button>
+                <div id="manage-status" style="font-size:0.85rem; text-align:center; min-height:20px; margin-top:10px;">
+                </div>
+
+                <!-- 수정 폼 -->
+                <div id="edit-match-form"
+                    style="display:none; margin-top: 20px; border-top: 1px solid #444; padding-top: 15px;">
+                    <h4 style="color:var(--accent); margin-top:0;"><i class="fa-solid fa-pen"></i> 경기 정보 수정</h4>
+                    <input type="hidden" id="edit-match-index">
+                    <div class="admin-form">
+                        <input type="text" id="edit-match-competition" class="form-input" placeholder="대회 이름">
+                        <input type="text" id="edit-match-title" class="form-input" placeholder="경기 제목">
+                        <input type="text" id="edit-match-video" class="form-input" placeholder="유튜브 URL">
+                        <label style="font-size:0.8rem; color:#aaa;">새 XML 파일 (변경할 때만 선택)</label>
+                        <input type="file" id="edit-match-xml-file" accept=".xml" class="form-input">
+                        <div style="display:flex; gap:10px; margin-top:10px;">
+                            <button onclick="applyEditMatch()" class="btn-submit" style="flex:1; background:#3498db;">수정
+                                내용 임시 적용</button>
+                            <button onclick="cancelEditMatch()" class="btn-submit"
+                                style="flex:1; background:#555;">취소</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 설정 모달 -->
+    <div class="modal-overlay" id="helpModal">
+        <div class="modal-box">
+            <button class="close-btn" onclick="toggleHelp()">&times;</button>
+            <div class="modal-header">시스템 설정</div>
+            <div class="modal-tabs">
+                <div class="m-tab active" id="tab-btn-guide" onclick="switchModalTab('guide')">가이드</div>
+                <div class="m-tab" id="tab-btn-shortcuts" onclick="switchModalTab('shortcuts')">단축키</div>
+            </div>
+            <div id="m-guide" class="m-content active"
+                style="line-height:1.6; font-size:0.95rem; overflow-y:auto; max-height:400px; padding-right:10px;">
+                <h4 style="color:var(--accent); margin-top:0;">1. 🌐 GitHub 매치 센터 연동</h4>
+                <p style="margin-top:5px;">상단 <b><i class="fa-brands fa-github"></i> 아이콘</b>을 눌러 깃허브에서 호스팅되는 경기 목록과 데이터를
+                    불러올 수 있습니다.</p>
+                <ul style="padding-left:20px; color:#ccc;">
+                    <li><b>Admin 탭</b>에 GitHub 계정의 <b>Personal Access Token (PAT)</b>과 <b>저장소 정보(ID, Repo)</b>를 입력하면 바로
+                        경기 영상(URL)과 XML 데이터를 저장소에 등록할 수 있습니다.</li>
+                    <li>이후 언제든지 <b>대회 목록</b>에서 클릭 한 번으로 영상과 데이터 타이밍을 일치시켜 불러올 수 있습니다.</li>
+                </ul>
+                <hr style="border:0; border-top:1px solid #444; margin:15px 0;">
+                <h4 style="color:#3498db; margin-top:0;">2. 💻 로컬 파일(영상/XML) 열기</h4>
+                <p style="margin-top:5px;">로컬 컴퓨터에 있는 영상을 바로 웹에서 분석할 수 있습니다.</p>
+                <ul style="padding-left:20px; color:#ccc;">
+                    <li><b><i class="fa-solid fa-file-video"></i> 영상 열기</b> 아이콘을 눌러 PC의 mp4, webm 등의 영상을 가져옵니다.</li>
+                    <li><b><i class="fa-solid fa-file-lines"></i> 데이터 열기</b> 아이콘을 눌러 경기 분석 XML 파일을 가져오면, 화면 우측 패널에 시간별
+                        이벤트 목록이 자동 생성됩니다.</li>
+                </ul>
+                <hr style="border:0; border-top:1px solid #444; margin:15px 0;">
+                <h4 style="color:#2ecc71; margin-top:0;">3. ✏️ 캔버스 드로잉 & 분석 도구</h4>
+                <p style="margin-top:5px;">영상 위에 전술 그래픽을 바로 그릴 수 있습니다.</p>
+                <ul style="padding-left:20px; color:#ccc;">
+                    <li>하단 메뉴바에서 <b>색상, 선 굵기, 투명도</b>를 직관적으로 조절할 수 있습니다.</li>
+                    <li>다중선(Polyline)이나 다각형(Polygon)을 그릴 때는 화면을 클릭하여 점을 찍고, <b>더블클릭</b>하면 도형이 완성됩니다.</li>
+                    <li>그려놓은 드로잉을 저장하려면 좌측 패널 밑쪽의 <b>장면 저장 <i class="fa-solid fa-floppy-disk"></i></b> 버튼을 누르면 우측 '장면' 탭
+                        메뉴에 시간이 기록됩니다.</li>
+                </ul>
+            </div>
+            <div id="m-shortcuts" class="m-content" style="max-height:400px; overflow-y:auto; padding-right:10px;">
+                <p style="font-size:0.85rem; color:#aaa; margin-top:0;">* 각 단축키 입력칸을 누른 후, 원하시는 새로운 키보드 키를 눌러 손쉽게 매핑을 바꿀
+                    수 있습니다.</p>
+                <div id="shortcut-list"></div>
+                <div
+                    style="font-size:0.85rem; color:#aaa; margin-top:15px; padding:10px; background:#222; border-radius:8px;">
+                    <div>💡 <b>고정 단축키 (변경 불가):</b></div>
+                    <ul style="margin:5px 0; padding-left:20px;">
+                        <li><kbd>←</kbd> <kbd>→</kbd> : 영상 5초 뒤로/앞으로</li>
+                        <li><kbd>ESC</kbd> : 그리기 강제 취소</li>
+                    </ul>
+                </div>
+                <button onclick="saveShortcuts()"
+                    style="margin-top:15px; padding:10px; background:var(--accent); color:white; border:none; width:100%; border-radius:5px; cursor:pointer; font-weight:bold;">단축키
+                    저장</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.youtube.com/iframe_api"></script>
+
+    <script>
+        // --- 🚀 앱 초기화 및 통합 로직 ---
+        window.addEventListener('DOMContentLoaded', () => {
+            // Fabric 초기화
+            if (typeof fabric !== 'undefined') {
+                canvas = new fabric.Canvas('c', { preserveObjectStacking: true });
+                if (typeof initCanvasEvents === 'function') initCanvasEvents();
+            }
+
+            // 파일 입력 핸들러 추가
+            const handleVideoInput = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                switchMode('local');
+                const localVideo = document.getElementById('local-video');
+                localVideo.src = URL.createObjectURL(file);
+                localVideo.load();
+                localVideo.onloadedmetadata = () => {
+                    const dur = localVideo.duration || 0;
+                    if (isFinite(dur)) { document.getElementById('timeDisplay').innerText = `0:00 / ${formatTime(dur)}`; }
+                };
+                localVideo.play();
+                e.target.value = null;
+            };
+
+            const handleDataInput = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const r = new FileReader();
+                r.onload = (evt) => {
+                    parseSportsCodeXML(evt.target.result);
+                    openTab('tab-data');
+                    document.getElementById('sceneSidebar').classList.remove('closed'); // Ensure it opens on mobile
+                };
+                r.readAsText(file);
+                e.target.value = null; // 재선택 가능하게
+            };
+
+            const vIn = document.getElementById('videoInput');
+            if (vIn) vIn.addEventListener('change', handleVideoInput);
+            const vInM = document.getElementById('videoInputMobile');
+            if (vInM) vInM.addEventListener('change', handleVideoInput);
+
+            const dIn = document.getElementById('dataInput');
+            if (dIn) dIn.addEventListener('change', handleDataInput);
+            const dInM = document.getElementById('dataInputMobile');
+            if (dInM) dInM.addEventListener('change', handleDataInput);
+
+            setTimeout(resizeCanvas, 500);
+            initShortcuts();
+            updateTimelineUI();
+            loadAdminConfig();
+
+            // --- 📱 모바일 터치 → 타임라인 스크러버 표시/숨김 ---
+            (function initMobileScrubber() {
+                let scrubberHideTimer = null;
+
+                function isMobile() {
+                    return window.matchMedia('(max-width: 768px)').matches ||
+                        (window.matchMedia('(max-width: 950px)').matches && window.matchMedia('(orientation: landscape)').matches);
+                }
+
+                function showScrubberMobile() {
+                    if (!isMobile()) return;
+                    const s = document.getElementById('videoScrubber');
+                    if (!s || s.style.display === 'none') return; // 영상 없으면 무시
+                    s.classList.add('scrubber-visible');
+                    clearTimeout(scrubberHideTimer);
+                    scrubberHideTimer = setTimeout(() => {
+                        s.classList.remove('scrubber-visible');
+                    }, 3000);
+                }
+
+                // 영상/캔버스 영역 터치 시 스크러버 표시
+                const mc = document.getElementById('mediaContainer');
+                if (mc) {
+                    mc.addEventListener('touchstart', (e) => {
+                        showScrubberMobile();
+                    }, { passive: true });
+                }
+
+                // 스크러버 자체 터치 시 타이머 연장
+                const scrubber = document.getElementById('videoScrubber');
+                if (scrubber) {
+                    scrubber.addEventListener('touchstart', () => {
+                        clearTimeout(scrubberHideTimer);
+                        scrubberHideTimer = setTimeout(() => {
+                            scrubber.classList.remove('scrubber-visible');
+                        }, 4000);
+                    }, { passive: true });
+                    scrubber.addEventListener('touchend', () => {
+                        clearTimeout(scrubberHideTimer);
+                        scrubberHideTimer = setTimeout(() => {
+                            scrubber.classList.remove('scrubber-visible');
+                        }, 3000);
+                    }, { passive: true });
+                }
+
+                // 화면 회전 시 숨김 처리
+                window.addEventListener('orientationchange', () => {
+                    if (scrubber) scrubber.classList.remove('scrubber-visible');
+                });
+
+                // 외부에서 호출 가능하게 전역 노출
+                window._showScrubberMobile = showScrubberMobile;
+            })();
+        });
+
+        // --- 🎥 유튜브 및 미디어 제어 함수 ---
+        function onYouTubeIframeAPIReady() {
+            ytPlayer = new YT.Player('youtube-player', {
+                height: '100%', width: '100%',
+                playerVars: { 'rel': 0, 'controls': 1, 'disablekb': 1, 'iv_load_policy': 3 },
+                events: {
+                    'onReady': () => { isYtReady = true; },
+                    'onStateChange': (event) => {
+                        // Attempt to enforce maximum video quality when playback or buffering starts
+                        if (event.data === YT.PlayerState.PLAYING || event.data === YT.PlayerState.BUFFERING) {
+                            if (typeof ytPlayer.setPlaybackQuality === 'function') {
+                                ytPlayer.setPlaybackQuality('highres'); // Options: 'default', 'small', 'medium', 'large', 'hd720', 'hd1080', 'highres'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function switchMode(m) {
+            currentMediaType = m;
+            const ytDiv = document.getElementById('youtube-player');
+            const localVid = document.getElementById('local-video');
+            const scrubber = document.getElementById('videoScrubber');
+
+            if (ytDiv) ytDiv.style.display = (m === 'youtube' ? 'block' : 'none');
+            if (localVid) localVid.style.display = (m === 'local' ? 'block' : 'none');
+
+            // 모바일에서는 CSS + scrubber-visible 클래스로 제어; PC에서는 display flex/none 직접 제어
+            const isMobileView = window.matchMedia('(max-width: 768px)').matches ||
+                (window.matchMedia('(max-width: 950px)').matches && window.matchMedia('(orientation: landscape)').matches);
+            if (scrubber) {
+                if (isMobileView) {
+                    // 모바일: display는 flex 고정 (CSS에서 visibility/transform으로 제어)
+                    // 영상 없을 때만 display:none
+                    scrubber.style.display = (m !== 'none' && m !== 'image') ? 'flex' : 'none';
+                    scrubber.classList.remove('scrubber-visible');
+                } else {
+                    scrubber.style.display = (m !== 'none' && m !== 'image') ? 'flex' : 'none';
+                }
+            }
+
+            if (m !== 'local' && localVid) localVid.pause();
+            if (m !== 'youtube' && isYtReady && ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
+
+            setTimeout(resizeCanvas, 200);
+        }
+
+        function loadYoutubePrompt() {
+            let url = prompt("YouTube URL:", "");
+            if (url) {
+                const ytIdMatch = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([^"&?\/\s]{11})/i);
+                if (ytIdMatch && ytIdMatch[1]) {
+                    switchMode('youtube');
+                    // 🔥 영상 클릭 오작동 방지: 재시도 로직 보강
+                    if (isYtReady && ytPlayer && ytPlayer.loadVideoById) {
+                        ytPlayer.loadVideoById(ytIdMatch[1]);
+                    } else {
+                        showStatus("플레이어 초기화 대기 중...");
+                        let checkCount = 0;
+                        const check = setInterval(() => {
+                            checkCount++;
+                            if (isYtReady && ytPlayer && ytPlayer.loadVideoById) {
+                                clearInterval(check);
+                                ytPlayer.loadVideoById(ytIdMatch[1]);
+                            }
+                            if (checkCount > 20) { clearInterval(check); showStatus("유튜브 로딩 실패. 새로고침 해주세요."); }
+                        }, 500);
+                    }
+                } else {
+                    alert("올바른 유튜브 링크가 아닙니다.");
+                }
+            }
+        }
+
+        function toggleVideoInteraction() {
+            isVideoInteractive = !isVideoInteractive;
+            const yt = document.getElementById('youtube-player');
+            const cw = document.getElementById('canvasWrapper');
+            const btn = document.getElementById('btn-video-touch');
+
+            if (isVideoInteractive) {
+                if (yt) yt.style.pointerEvents = 'auto';
+                if (cw) cw.style.pointerEvents = 'none';
+                if (btn) btn.classList.add('active');
+                showStatus("영상 조작 모드 (추천영상 끄기 가능)");
+            } else {
+                if (yt) yt.style.pointerEvents = 'none';
+                if (cw) cw.style.pointerEvents = 'auto';
+                if (btn) btn.classList.remove('active');
+                showStatus("드로잉 모드");
+            }
+        }
+
+        function toggleMobileTools() {
+            const sb = document.querySelector('.sidebar');
+            if(sb) sb.classList.toggle('mobile-show');
+        }
+
+        function handleSkip(act) {
+            videoControl(act);
+            const fb = document.getElementById('skip-feedback');
+            if(fb) {
+                fb.innerHTML = act === 'rewind' ? '<i class="fa-solid fa-backward-step"></i> -5초' : '+5초 <i class="fa-solid fa-forward-step"></i>';
+                fb.style.opacity = '1';
+                setTimeout(() => fb.style.opacity = '0', 600);
+            }
+        }
+
+        function videoControl(act) {
+            const localVid = document.getElementById('local-video');
+            if (currentMediaType === 'local' && localVid) {
+                if (act === 'toggle') localVid.paused ? localVid.play() : localVid.pause();
+                else if (act === 'rewind') localVid.currentTime -= 5;
+                else if (act === 'forward') localVid.currentTime += 5;
+            } else if (currentMediaType === 'youtube' && isYtReady && ytPlayer) {
+                if (act === 'toggle') {
+                    const state = ytPlayer.getPlayerState();
+                    state === 1 ? ytPlayer.pauseVideo() : ytPlayer.playVideo();
+                }
+                else if (act === 'rewind') ytPlayer.seekTo(ytPlayer.getCurrentTime() - 5, true);
+                else if (act === 'forward') ytPlayer.seekTo(ytPlayer.getCurrentTime() + 5, true);
+            }
+        }
+
+        function updateTimelineUI() {
+            try {
+                if (!isDraggingSlider) {
+                    let cur = 0, dur = 0;
+                    const localVid = document.getElementById('local-video');
+                    const timeSliderElem = document.getElementById('timeSlider');
+                    const timeDisplayElem = document.getElementById('timeDisplay');
+
+                    if (currentMediaType === 'local' && localVid) {
+                        cur = localVid.currentTime || 0;
+                        dur = localVid.duration || 0;
+                    }
+                    else if (currentMediaType === 'youtube' && isYtReady && ytPlayer && typeof ytPlayer.getDuration === 'function') {
+                        cur = ytPlayer.getCurrentTime() || 0;
+                        dur = ytPlayer.getDuration() || 0;
+                    }
+
+                    if (timeSliderElem && timeDisplayElem) {
+                        if (dur > 0 && isFinite(dur)) {
+                            timeSliderElem.value = (cur / dur) * 100;
+                            timeDisplayElem.innerText = `${formatTime(cur)} / ${formatTime(dur)}`;
+                        } else {
+                            timeSliderElem.value = 0;
+                            timeDisplayElem.innerText = "0:00 / 0:00";
+                        }
+                    }
+                }
+
+                // Update Play/Pause Button Icon to reflect state
+                const playBtn = document.getElementById('btn-play-scrubber');
+                if (playBtn) {
+                    const localVid = document.getElementById('local-video');
+                    if (currentMediaType === 'local' && localVid) {
+                        playBtn.innerHTML = localVid.paused ? '<i class="fa-solid fa-play"></i>' : '<i class="fa-solid fa-pause"></i>';
+                    } else if (currentMediaType === 'youtube' && isYtReady && ytPlayer && typeof ytPlayer.getPlayerState === 'function') {
+                        playBtn.innerHTML = (ytPlayer.getPlayerState() === 1) ? '<i class="fa-solid fa-pause"></i>' : '<i class="fa-solid fa-play"></i>';
+                    }
+                }
+
+            } catch (e) {
+                // Ignore API not ready errors, just keep looping
+            }
+            requestAnimationFrame(updateTimelineUI);
+        }
+
+        const timeSliderGlobal = document.getElementById('timeSlider');
+        if (timeSliderGlobal) {
+            timeSliderGlobal.addEventListener('input', () => { isDraggingSlider = true; });
+            timeSliderGlobal.addEventListener('change', () => {
+                isDraggingSlider = false;
+                const localVid = document.getElementById('local-video');
+                const val = timeSliderGlobal.value / 100;
+                if (currentMediaType === 'local' && localVid && localVid.duration) localVid.currentTime = val * localVid.duration;
+                else if (currentMediaType === 'youtube' && isYtReady && ytPlayer && typeof ytPlayer.getDuration === 'function') ytPlayer.seekTo(val * ytPlayer.getDuration(), true);
+            });
+            timeSliderGlobal.addEventListener('pointerup', () => { isDraggingSlider = false; });
+            timeSliderGlobal.addEventListener('touchend', () => { isDraggingSlider = false; });
+        }
+
+        const speedSlider = document.getElementById('speedSlider');
+        if (speedSlider) {
+            speedSlider.oninput = () => {
+                const rate = parseFloat(speedSlider.value);
+                document.getElementById('speedVal').innerText = rate.toFixed(1) + 'x';
+                const localVid = document.getElementById('local-video');
+                if (currentMediaType === 'local' && localVid) localVid.playbackRate = rate;
+                else if (currentMediaType === 'youtube' && isYtReady && ytPlayer && typeof ytPlayer.setPlaybackRate === 'function') ytPlayer.setPlaybackRate(rate);
+            };
+        }
+
+        function resizeCanvas() {
+            const cont = document.getElementById('mediaContainer');
+            if (cont && cont.offsetWidth > 0 && canvas) {
+                canvas.setDimensions({ width: cont.offsetWidth, height: cont.offsetHeight });
+                canvas.renderAll();
+            }
+        }
+        window.onresize = resizeCanvas;
+
+        // --- 🔗 GitHub & Match Center Logic ---
+        function openMatchCenter() {
+            const modal = document.getElementById('matchCenterModal');
+            if (modal) modal.style.display = 'flex';
+            loadAdminConfig();
+            loadGitHubManifest();
+        }
+
+        function closeMatchCenter() {
+            const modal = document.getElementById('matchCenterModal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function switchMatchTab(t) {
+            document.getElementById('m-tab-list').className = 'm-tab' + (t === 'list' ? ' active' : '');
+            document.getElementById('m-tab-admin').className = 'm-tab' + (t === 'admin' ? ' active' : '');
+            document.getElementById('m-tab-manage').className = 'm-tab' + (t === 'manage' ? ' active' : '');
+
+            document.getElementById('match-view-list').className = 'm-content' + (t === 'list' ? ' active' : '');
+            document.getElementById('match-view-admin').className = 'm-content' + (t === 'admin' ? ' active' : '');
+            document.getElementById('match-view-manage').className = 'm-content' + (t === 'manage' ? ' active' : '');
+
+            if (t === 'manage') renderManageList();
+            if (t === 'admin') updateCompSelect();
+        }
+
+        function updateCompSelect() {
+            const select = document.getElementById('match-competition-select');
+            if (!select) return;
+            select.innerHTML = '<option value="">-- 기존 대회 선택 --</option>';
+            const comps = [...new Set(githubMatchesData.map(m => m.competition || "기타"))].filter(c => c !== "기타");
+            comps.forEach(c => {
+                select.innerHTML += `<option value="${c}">${c}</option>`;
+            });
+            select.innerHTML += '<option value="NEW">➕ 새 대회 직접 입력...</option>';
+            toggleNewCompInput();
+        }
+
+        function toggleNewCompInput() {
+            const select = document.getElementById('match-competition-select');
+            const input = document.getElementById('match-competition-new');
+            if (select.value === 'NEW' || select.options.length <= 2) {
+                input.style.display = 'block';
+                if (select.options.length <= 2) select.value = 'NEW';
+            } else {
+                input.style.display = 'none';
+            }
+        }
+
+        async function loadGitHubManifest() {
+            const urlInput = document.getElementById('manifest-url');
+            if (!urlInput) return;
+            const url = urlInput.value.trim();
+            const container = document.getElementById('match-list-container');
+            const loading = document.getElementById('match-loading');
+            if (loading) loading.style.display = 'block';
+            if (container) container.innerHTML = '';
+
+            try {
+                const token = document.getElementById('gh-token').value;
+                const owner = document.getElementById('gh-owner').value;
+                const repo = document.getElementById('gh-repo').value;
+
+                let data = null;
+
+                if (token && owner && repo) {
+                    let path = url.trim();
+                    if (path.startsWith('./')) path = path.substring(2);
+                    if (path === 'matches.json' || !path.includes('http')) {
+                        path = 'matches.json';
+                    } else if (path.includes('github.com') || path.includes('raw.githubusercontent.com')) {
+                        const m = path.match(/.*?(?:github\.com|raw\.githubusercontent\.com)\/[^\/]+\/[^\/]+\/(?:blob\/[^\/]+\/|refs\/heads\/[^\/]+\/)?(.*)/);
+                        if (m) path = m[1];
+                    }
+
+                    try {
+                        const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${encodeURI(path)}`, {
+                            headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3.raw' }
+                        });
+                        if (res.ok) data = await res.json();
+                    } catch (e) { console.log(e); }
+                }
+
+                if (!data) {
+                    const headers = {};
+                    if (token) headers['Authorization'] = `token ${token}`;
+                    let finalUrl = getDirectLink(url);
+                    const response = await fetch(finalUrl + (finalUrl.includes('?') ? '&' : '?') + "t=" + Date.now(), { headers });
+                    if (!response.ok) throw new Error("HTTP " + response.status);
+                    data = await response.json();
+                }
+
+                githubMatchesData = data.matches || [];
+                renderCompList();
+                if (loading) loading.style.display = 'none';
+            } catch (e) {
+                if (loading) loading.innerText = "목록을 불러올 수 없습니다. (" + e.message + ")";
+            }
+        }
+
+        function renderCompList() {
+            const container = document.getElementById('match-list-container');
+            if (!container) return;
+            container.innerHTML = '';
+            const nav = document.getElementById('list-nav'); if (nav) nav.style.display = 'none';
+            const comps = [...new Set(githubMatchesData.map(m => m.competition || "기타"))];
+            comps.forEach(comp => {
+                const card = document.createElement('div'); card.className = 'comp-card';
+                card.innerHTML = `<i class="fa-solid fa-folder-open" style="color:var(--accent);"></i> <span>${comp}</span>`;
+                card.onclick = () => renderMatchList(comp); container.appendChild(card);
+            });
+        }
+
+        function renderMatchList(comp) {
+            const container = document.getElementById('match-list-container');
+            if (!container) return;
+            container.innerHTML = '';
+            const nav = document.getElementById('list-nav'); if (nav) nav.style.display = 'block';
+            githubMatchesData.filter(m => (m.competition || "기타") === comp).forEach(match => {
+                const card = document.createElement('div'); card.className = 'match-card';
+                card.innerHTML = `<span>${match.title}</span> <i class="fa-solid fa-play" style="color:var(--accent);"></i>`;
+                card.onclick = () => selectMatch(match); container.appendChild(card);
+            });
+        }
+
+        function getDirectLink(url) {
+            if (!url) return ""; let l = url.trim();
+            if (l.startsWith('./')) {
+                const manifestInput = document.getElementById('manifest-url');
+                if (manifestInput) {
+                    const manifestUrl = manifestInput.value.trim();
+                    const baseUrl = manifestUrl.substring(0, manifestUrl.lastIndexOf('/'));
+                    l = baseUrl + l.substring(1);
+                }
+            }
+            if (l.includes("github.com") && !l.includes("raw.githubusercontent.com")) {
+                l = l.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/");
+            }
+            return encodeURI(l);
+        }
+
+        // --- 🔥 신규: 매치 목록 관리 기능 (Manage) - 그룹화 및 정렬 ---
+        function getGroupedMatches() {
+            const groups = [];
+            const compMap = new Map();
+            githubMatchesData.forEach((m, origIndex) => {
+                const cName = m.competition || "기타";
+                if (!compMap.has(cName)) {
+                    compMap.set(cName, { comp: cName, matches: [] });
+                    groups.push(compMap.get(cName));
+                }
+                compMap.get(cName).matches.push({ ...m, origIndex });
+            });
+            return groups;
+        }
+
+        function flattenGroups(groups) {
+            const newArr = [];
+            groups.forEach(g => {
+                g.matches.forEach(m => {
+                    const { origIndex, ...rest } = m;
+                    newArr.push(rest);
+                });
+            });
+            githubMatchesData = newArr;
+            renderManageList();
+            document.getElementById('manage-status').innerText = "순서가 변경되었습니다. (하단 '최종 저장'을 눌러야 깃허브에 반영됩니다)";
+        }
+
+        function renderManageList() {
+            const container = document.getElementById('manage-list-container');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const groups = getGroupedMatches();
+
+            groups.forEach((g, cIdx) => {
+                const groupEl = document.createElement('div');
+                groupEl.className = 'manage-group';
+
+                let matchesHTML = '';
+                g.matches.forEach((m, mIdx) => {
+                    matchesHTML += `
+                        <div class="manage-match-item">
+                            <span style="flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:0.9rem; color:#eee;">${m.title}</span>
+                            <div style="flex-shrink:0;">
+                                <button class="manage-btn" onclick="moveMatchInGroup(${cIdx}, ${mIdx}, -1)" ${mIdx === 0 ? 'disabled style="opacity:0.3"' : ''} title="경기 위로">▲</button>
+                                <button class="manage-btn" onclick="moveMatchInGroup(${cIdx}, ${mIdx}, 1)" ${mIdx === g.matches.length - 1 ? 'disabled style="opacity:0.3"' : ''} title="경기 아래로">▼</button>
+                                <button class="manage-btn edit" onclick="openEditMatchByOrigIndex(${m.origIndex})" title="수정"><i class="fa-solid fa-pen"></i></button>
+                                <button class="manage-btn del" onclick="deleteMatchByOrigIndex(${m.origIndex})" title="삭제"><i class="fa-solid fa-trash"></i></button>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                groupEl.innerHTML = `
+                    <div class="manage-group-header">
+                        <span><i class="fa-solid fa-folder-open"></i> ${g.comp}</span>
+                        <div>
+                            <button class="manage-btn" onclick="moveCompetition(${cIdx}, -1)" ${cIdx === 0 ? 'disabled style="opacity:0.3"' : ''} title="대회 위로 올리기">대회 ▲</button>
+                            <button class="manage-btn" onclick="moveCompetition(${cIdx}, 1)" ${cIdx === groups.length - 1 ? 'disabled style="opacity:0.3"' : ''} title="대회 아래로 내리기">대회 ▼</button>
+                        </div>
+                    </div>
+                    ${matchesHTML}
+                `;
+                container.appendChild(groupEl);
+            });
+        }
+
+        function moveCompetition(compIndex, direction) {
+            const groups = getGroupedMatches();
+            if (compIndex + direction < 0 || compIndex + direction >= groups.length) return;
+            const temp = groups[compIndex];
+            groups[compIndex] = groups[compIndex + direction];
+            groups[compIndex + direction] = temp;
+            flattenGroups(groups);
+        }
+
+        function moveMatchInGroup(compIndex, matchIndex, direction) {
+            const groups = getGroupedMatches();
+            const matches = groups[compIndex].matches;
+            if (matchIndex + direction < 0 || matchIndex + direction >= matches.length) return;
+            const temp = matches[matchIndex];
+            matches[matchIndex] = matches[matchIndex + direction];
+            matches[matchIndex + direction] = temp;
+            flattenGroups(groups);
+        }
+
+        async function deleteMatchByOrigIndex(origIndex) {
+            if (confirm("이 경기를 목록에서 삭제하시겠습니까?\n(확인 시 깃허브의 XML 파일도 함께 삭제됩니다. 최종 저장 버튼을 눌러 목록 갱신도 완료해야 합니다.)")) {
+                const match = githubMatchesData[origIndex];
+                if (match && match.data) {
+                    const token = document.getElementById('gh-token').value;
+                    const owner = document.getElementById('gh-owner').value;
+                    const repo = document.getElementById('gh-repo').value;
+                    if (token && owner && repo) {
+                        try {
+                            let path = match.data;
+                            if (path.startsWith('./')) path = path.substring(2);
+                            const checkRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${encodeURI(path)}`, { headers: { 'Authorization': `token ${token}` } });
+                            if (checkRes.ok) {
+                                const data = await checkRes.json();
+                                await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${encodeURI(path)}`, {
+                                    method: 'DELETE',
+                                    headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ message: `Delete match XML: ${match.title}`, sha: data.sha })
+                                });
+                            }
+                        } catch (e) {
+                            console.error("XML 삭제 실패", e);
+                        }
+                    }
+                }
+                githubMatchesData.splice(origIndex, 1);
+                renderManageList();
+                cancelEditMatch();
+                document.getElementById('manage-status').innerText = "해당 경기와 XML 파일이 삭제되었습니다. 반드시 '최종 저장'을 눌러주세요.";
+            }
+        }
+
+        function openEditMatchByOrigIndex(origIndex) {
+            const match = githubMatchesData[origIndex];
+            document.getElementById('edit-match-index').value = origIndex;
+            document.getElementById('edit-match-competition').value = match.competition || "";
+            document.getElementById('edit-match-title').value = match.title || "";
+            document.getElementById('edit-match-video').value = match.video || "";
+            document.getElementById('edit-match-xml-file').value = "";
+            document.getElementById('edit-match-form').style.display = 'block';
+            document.getElementById('edit-match-form').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function cancelEditMatch() {
+            document.getElementById('edit-match-form').style.display = 'none';
+        }
+
+        async function applyEditMatch() {
+            const index = document.getElementById('edit-match-index').value;
+            const comp = document.getElementById('edit-match-competition').value.trim();
+            const title = document.getElementById('edit-match-title').value.trim();
+            const video = document.getElementById('edit-match-video').value.trim();
+            const xmlFile = document.getElementById('edit-match-xml-file').files[0];
+            const status = document.getElementById('manage-status');
+
+            if (!comp || !title || !video) { alert("대회명, 제목, 영상 URL은 필수입니다."); return; }
+
+            saveAdminConfig();
+            const token = document.getElementById('gh-token').value;
+            const owner = document.getElementById('gh-owner').value;
+            const repo = document.getElementById('gh-repo').value;
+
+            let dataPath = githubMatchesData[index].data;
+
+            // 새 XML을 업로드 한 경우 즉시 깃허브에 반영 (데이터 덮어쓰기)
+            if (xmlFile) {
+                if (!token || !owner || !repo) { alert("XML을 업로드하려면 Admin 탭에 PAT 정보가 있어야 합니다."); return; }
+                status.innerHTML = `<span style="color:#3498db;">새로운 XML 파일 깃허브에 업로드 중...</span>`;
+                try {
+                    // 기존 XML 삭제 시도
+                    if (dataPath) {
+                        let oldPath = dataPath;
+                        if (oldPath.startsWith('./')) oldPath = oldPath.substring(2);
+                        try {
+                            const checkOldres = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${encodeURI(oldPath)}`, { headers: { 'Authorization': `token ${token}` } });
+                            if (checkOldres.ok) {
+                                const oldData = await checkOldres.json();
+                                await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${encodeURI(oldPath)}`, {
+                                    method: 'DELETE',
+                                    headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ message: `Delete old XML: ${title}`, sha: oldData.sha })
+                                });
+                            }
+                        } catch (e) { }
+                    }
+
+                    const xmlBase64 = await new Promise((res, rej) => {
+                        const r = new FileReader(); r.onload = () => res(r.result.split(',')[1]); r.onerror = rej; r.readAsDataURL(xmlFile);
+                    });
+
+                    const xmlPath = `data/${comp}/${title}_${Date.now()}.xml`;
+                    const upRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${encodeURI(xmlPath)}`, {
+                        method: 'PUT', headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: `Update match XML: ${title}`, content: xmlBase64 })
+                    });
+
+                    if (!upRes.ok) throw new Error("새 XML 업로드 실패");
+                    dataPath = `${xmlPath}`;
+                } catch (e) {
+                    status.innerHTML = `<span style="color:#e74c3c;">XML 변경 오류: ${e.message}</span>`;
+                    return;
+                }
+            }
+
+            githubMatchesData[index] = {
+                title: title, competition: comp, video: video, data: dataPath,
+                date: githubMatchesData[index].date || new Date().toISOString().split('T')[0]
+            };
+
+            renderManageList();
+            cancelEditMatch();
+            status.innerHTML = `<span style="color:#f1c40f;">수정 내용이 목록에 적용되었습니다. 하단의 '최종 저장'을 반드시 누르세요!</span>`;
+        }
+
+        async function saveManifestToGitHub() {
+            const token = document.getElementById('gh-token').value;
+            const owner = document.getElementById('gh-owner').value;
+            const repo = document.getElementById('gh-repo').value;
+            const status = document.getElementById('manage-status');
+
+            if (!token || !owner || !repo) { alert("GitHub PAT, ID, Repo 정보가 필요합니다. (Admin 탭 확인)"); return; }
+            status.innerHTML = `변경사항을 깃허브에 저장 중...`;
+
+            try {
+                // 저장 전 항상 matches.json의 최신 SHA 항목을 가져옵니다.
+                const manifestRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/matches.json?t=${Date.now()}`, { headers: { 'Authorization': `token ${token}` } });
+                if (!manifestRes.ok) throw new Error("matches.json 최신 정보를 가져오지 못했습니다.");
+                const manifestData = await manifestRes.json();
+
+                const manifestObj = { matches: githubMatchesData };
+                const jsonString = JSON.stringify(manifestObj, null, 2);
+
+                const encodedBytes = new TextEncoder().encode(jsonString);
+                let binStr = ""; for (let i = 0; i < encodedBytes.length; i++) binStr += String.fromCharCode(encodedBytes[i]);
+                const updatedJsonB64 = window.btoa(binStr);
+
+                const finalUpRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/matches.json`, {
+                    method: 'PUT', headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: `Update matches list (Manage)`, content: updatedJsonB64, sha: manifestData.sha })
+                });
+
+                if (!finalUpRes.ok) throw new Error(`업데이트 실패 (HTTP ${finalUpRes.status})`);
+
+                status.innerHTML = `<span style="color:#2ecc71;">성공적으로 깃허브에 완벽히 저장되었습니다!</span>`;
+                setTimeout(() => { loadGitHubManifest(); }, 1500);
+            } catch (e) {
+                status.innerHTML = `<span style="color:#e74c3c;">저장 오류: ${e.message}</span>`;
+            }
+        }
+
+        // --- 🎥 경기 클릭시 매치 로드 동작 로직 (Silent Error 방지) ---
+        async function selectMatch(match) {
+            closeMatchCenter(); showStatus(`${match.title} 로드 중...`, true);
+
+            // 비디오 URL 누락 등 오류 대응 안전장치 추가
+            const videoUrl = match.video || "";
+            const ytMatch = videoUrl.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/shorts\/)([^"&?\/\s]{11})/i);
+
+            if (ytMatch) {
+                switchMode('youtube');
+                if (isYtReady && ytPlayer && ytPlayer.loadVideoById) {
+                    ytPlayer.loadVideoById(ytMatch[1]);
+                } else {
+                    let checkCount = 0;
+                    const check = setInterval(() => {
+                        checkCount++;
+                        if (isYtReady && ytPlayer && ytPlayer.loadVideoById) {
+                            clearInterval(check);
+                            ytPlayer.loadVideoById(ytMatch[1]);
+                        }
+                        if (checkCount > 20) clearInterval(check);
+                    }, 500);
+                }
+            } else if (videoUrl) {
+                switchMode('local');
+                const localVideo = document.getElementById('local-video');
+                localVideo.src = videoUrl;
+                localVideo.load();
+                localVideo.onloadedmetadata = () => {
+                    const dur = localVideo.duration || 0;
+                    if (isFinite(dur)) {
+                        document.getElementById('timeDisplay').innerText = `0:00 / ${formatTime(dur)}`;
+                    }
+                };
+            } else {
+                switchMode('none');
+                showStatus(`영상 링크가 비어있습니다.`);
+            }
+
+            try {
+                if (match.data) {
+                    // 데이터 패널 먼저 열기 (로딩 표시)
+                    openTab('tab-data');
+                    document.getElementById('sceneSidebar').classList.remove('closed');
+                    const listEl = document.getElementById('dataList');
+                    if (listEl) listEl.innerHTML = '<div style="color:#aaa; padding:15px; font-size:0.85rem;">⏳ 데이터 불러오는 중...</div>';
+                    const text = await fetchExternalData(match.data);
+                    parseSportsCodeXML(text);
+                    showStatus(`${match.title} 로드 완료!`);
+                } else {
+                    showStatus(`${match.title} (XML 데이터 없음)`);
+                    openTab('tab-data');
+                    document.getElementById('sceneSidebar').classList.remove('closed');
+                    const listEl = document.getElementById('dataList');
+                    if (listEl) listEl.innerHTML = '<div style="color:#aaa; padding:15px; font-size:0.85rem;">이 경기에는 XML 데이터가 없습니다.</div>';
+                }
+            } catch (err) {
+                // 에러를 모바일에서도 볼 수 있도록 패널에 표시
+                openTab('tab-data');
+                document.getElementById('sceneSidebar').classList.remove('closed');
+                const listEl = document.getElementById('dataList');
+                if (listEl) listEl.innerHTML = `<div style="color:#e74c3c; padding:15px; font-size:0.85rem;">❌ 데이터 로드 실패:<br>${err.message}</div>`;
+                console.error("데이터 로드 실패:", err);
+            }
+        }
+
+        // 🔧 arrayBuffer를 UTF-8로 명시 디코딩 (BOM 자동 제거 포함)
+        async function safeDecodeResponse(response) {
+            const buf = await response.arrayBuffer();
+            const bytes = new Uint8Array(buf);
+            // UTF-8 BOM (EF BB BF) 제거
+            let start = 0;
+            if (bytes.length >= 3 && bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF) start = 3;
+            // UTF-16 LE BOM (FF FE) 제거 → UTF-16 LE 디코딩
+            else if (bytes.length >= 2 && bytes[0] === 0xFF && bytes[1] === 0xFE) {
+                try { return new TextDecoder('utf-16le').decode(bytes.slice(2)); } catch (e) { }
+            }
+            // UTF-16 BE BOM (FE FF) 제거 → UTF-16 BE 디코딩
+            else if (bytes.length >= 2 && bytes[0] === 0xFE && bytes[1] === 0xFF) {
+                try { return new TextDecoder('utf-16be').decode(bytes.slice(2)); } catch (e) { }
+            }
+            return new TextDecoder('utf-8').decode(bytes.slice(start));
+        }
+
+        async function fetchExternalData(url) {
+            const token = document.getElementById('gh-token').value;
+            const owner = document.getElementById('gh-owner').value;
+            const repo = document.getElementById('gh-repo').value;
+
+            let path = url.trim();
+            if (path.startsWith('./')) path = path.substring(2);
+
+            if (path.includes('.xml') || path.includes('.json') || path.includes('.csv')) {
+                // Check if running on local file system (index.html opened locally) without GitHub API configured setup
+                if (!token || !owner || !repo) {
+                    try {
+                        const localRes = await fetch(path);
+                        if (localRes.ok) return await safeDecodeResponse(localRes);
+                    } catch (e) { console.log("Local fetch failed", e); }
+                    throw new Error("Local File API or GitHub Token required for " + path);
+                }
+
+                try {
+                    let apiPath = path;
+                    if (apiPath.includes('github.com') || apiPath.includes('raw.githubusercontent.com')) {
+                        const m = apiPath.match(/.*?(?:github\.com|raw\.githubusercontent\.com)\/[^\/]+\/[^\/]+\/(?:blob\/[^\/]+\/|refs\/heads\/[^\/]+\/)?(.*)/);
+                        if (m) apiPath = m[1];
+                    }
+
+                    const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${encodeURI(apiPath)}`, {
+                        headers: {
+                            'Authorization': `token ${token}`,
+                            'Accept': 'application/vnd.github.v3.raw'
+                        }
+                    });
+                    if (response.ok) return await safeDecodeResponse(response);
+                } catch (e) {
+                    console.log("GitHub API fetch fallback", e);
+                }
+            }
+
+            const finalUrl = getDirectLink(url);
+            const headers = {}; if (token && finalUrl.includes("raw.githubusercontent.com")) headers['Authorization'] = `token ${token}`;
+            try {
+                const response = await fetch(finalUrl, { headers });
+                if (response.ok) {
+                    const text = await safeDecodeResponse(response);
+                    const lower = text.trimStart().toLowerCase();
+                    // HTML 에러 페이지(대소문자 무관) 걸러내기
+                    if (!lower.startsWith("<!doctype") && !lower.startsWith("<html")) return text;
+                }
+                const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(finalUrl);
+                const proxyRes = await fetch(proxyUrl);
+                return await safeDecodeResponse(proxyRes);
+            } catch (e) { throw new Error("로드 실패: " + e.message); }
+        }
+
+        async function uploadMatchToGitHub() {
+            saveAdminConfig();
+            const token = document.getElementById('gh-token').value;
+            const owner = document.getElementById('gh-owner').value;
+            const repo = document.getElementById('gh-repo').value;
+
+            const compSelect = document.getElementById('match-competition-select').value;
+            const compNew = document.getElementById('match-competition-new').value.trim();
+            const comp = (compSelect === 'NEW' || !compSelect) ? compNew : compSelect;
+
+            const title = document.getElementById('match-title').value.trim();
+            const video = document.getElementById('match-video').value.trim();
+            const xmlFile = document.getElementById('match-xml-file').files[0];
+            const status = document.getElementById('upload-status');
+            const btn = document.getElementById('btn-gh-upload');
+
+            if (!token || !owner || !repo || !comp || !title || !video || !xmlFile) { alert("항목을 모두 채워주세요."); return; }
+            btn.disabled = true; status.innerHTML = `업로드 중...`;
+
+            try {
+                const xmlPath = `data/${comp}/${title}.xml`;
+                let xmlSha = null;
+                const checkRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${encodeURI(xmlPath)}`, { headers: { 'Authorization': `token ${token}` } });
+                if (checkRes.ok) { const data = await checkRes.json(); xmlSha = data.sha; }
+
+                const xmlBase64 = await new Promise((res, rej) => {
+                    const r = new FileReader(); r.onload = () => res(r.result.split(',')[1]); r.onerror = rej; r.readAsDataURL(xmlFile);
+                });
+
+                const upBody = { message: `Add/Update data: ${title}`, content: xmlBase64 };
+                if (xmlSha) upBody.sha = xmlSha;
+
+                const upRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${encodeURI(xmlPath)}`, {
+                    method: 'PUT', headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(upBody)
+                });
+                if (!upRes.ok) { const errData = await upRes.json(); throw new Error(`XML 업로드 실패: ${errData.message}`); }
+
+                const manifestRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/matches.json?t=${Date.now()}`, { headers: { 'Authorization': `token ${token}` } });
+                let manifestObj = { matches: [] }; let manifestSha = null;
+
+                if (manifestRes.ok) {
+                    const manifestData = await manifestRes.json();
+                    manifestSha = manifestData.sha;
+                    try {
+                        if (manifestData.content) {
+                            const contentClean = manifestData.content.replace(/\s/g, "");
+                            const bytes = new Uint8Array(window.atob(contentClean).split('').map(c => c.charCodeAt(0)));
+                            manifestObj = JSON.parse(new TextDecoder("utf-8").decode(bytes));
+                        } else {
+                            manifestObj.matches = [...githubMatchesData];
+                        }
+                    } catch (e) {
+                        manifestObj.matches = [...githubMatchesData];
+                    }
+                } else {
+                    manifestObj.matches = [...githubMatchesData];
+                }
+
+                const existingIndex = manifestObj.matches.findIndex(m => m.title === title && m.competition === comp);
+                const newMatchData = { title, competition: comp, video, data: `${xmlPath}`, date: new Date().toISOString().split('T')[0] };
+                if (existingIndex !== -1) manifestObj.matches[existingIndex] = newMatchData; else manifestObj.matches.push(newMatchData);
+
+                const jsonString = JSON.stringify(manifestObj, null, 2);
+                const encodedBytes = new TextEncoder().encode(jsonString);
+                let binStr = ""; for (let i = 0; i < encodedBytes.length; i++) binStr += String.fromCharCode(encodedBytes[i]);
+                const updatedJsonB64 = window.btoa(binStr);
+
+                const manifestUpBody = { message: `Update manifest: ${title}`, content: updatedJsonB64 };
+                if (manifestSha) manifestUpBody.sha = manifestSha;
+
+                const finalUpRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/matches.json`, {
+                    method: 'PUT', headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(manifestUpBody)
+                });
+
+                if (!finalUpRes.ok) { const errData = await finalUpRes.json(); throw new Error(`목록 업데이트 실패: ${errData.message}`); }
+
+                status.innerHTML = `<span style="color:#2ecc71;">성공적으로 업로드되었습니다!</span>`;
+                setTimeout(() => { switchMatchTab('list'); loadGitHubManifest(); }, 1500);
+            } catch (e) { status.innerHTML = `<span style="color:#e74c3c;">오류: ${e.message}</span>`; } finally { btn.disabled = false; }
+        }
+
+        // --- 🎨 드로잉 모드 및 마우스 핸들러 전역 선언 ---
+        function hexToMutedRgba(h, a) { const r = parseInt(h.slice(1, 3), 16), g = parseInt(h.slice(3, 5), 16), b = parseInt(h.slice(5, 7), 16); return `rgba(${r},${g},${b},${a})`; }
+        function getStrokeGradient(color) { return new fabric.Gradient({ type: 'linear', gradientUnits: 'percentage', coords: { x1: 0, y1: 0, x2: 0, y2: 1 }, colorStops: [{ offset: 0, color: hexToMutedRgba(color, 0) }, { offset: 0.5, color: hexToMutedRgba(color, 0.5) }, { offset: 1, color: color }] }); }
+        function getEllipseOffset(point, targetX, targetY, rx, ry) { const dx = targetX - point.left; const dy = targetY - point.top; const angle = Math.atan2(dy, dx); const radiusAtAngle = (rx * ry) / Math.sqrt(Math.pow(ry * Math.cos(angle), 2) + Math.pow(rx * Math.sin(angle), 2)); const offset = radiusAtAngle + 2; return { x: point.left + Math.cos(angle) * offset, y: point.top + Math.sin(angle) * offset }; }
+
+        function setMode(mode) {
+            if (typeof isVideoInteractive !== 'undefined' && isVideoInteractive) toggleVideoInteraction();
+            currentMode = mode;
+            document.querySelectorAll('.sidebar .tool-btn').forEach(b => b.classList.remove('active'));
+            
+            // 모바일 도구함에서 도구 선택 시 자동으로 도구함을 닫음
+            const sb = document.querySelector('.sidebar');
+            if(sb && sb.classList.contains('mobile-show')) {
+                sb.classList.remove('mobile-show');
+            }
+            
+            document.getElementById('btn-' + mode)?.classList.add('active');
+
+            const guide = document.getElementById('guide-msg');
+            if (guide) guide.style.display = (mode === 'drawPolyline' || mode === 'drawPolygon') ? 'block' : 'none';
+            if (mode === 'drawPolyline' || mode === 'drawPolygon') { guide.innerText = "더블클릭하여 도형 완성"; }
+
+            if (canvas) {
+                if (mode === 'drawPen') {
+                    canvas.isDrawingMode = true;
+                    canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+                    canvas.freeDrawingBrush.color = currentColor;
+                    canvas.freeDrawingBrush.width = currentSize / 4;
+                    canvas.freeDrawingBrush.shadow = broadcastShadow;
+                    canvas.selection = false;
+                } else {
+                    canvas.isDrawingMode = false;
+                    canvas.selection = (mode === 'select');
+                    canvas.defaultCursor = (mode === 'select') ? 'default' : 'crosshair';
+                    const s = (mode === 'select');
+                    canvas.forEachObject(o => { o.selectable = s; o.evented = s; });
+                }
+            }
+            if (canvas) canvas.requestRenderAll();
+            resetDrawing();
+        }
+
+        function initCanvasEvents() {
+            canvas.on('mouse:down', function (o) {
+                if (isPalmRejection && o.e && (o.e.pointerType === 'touch' || o.e.touches)) return;
+                
+                // 모바일 환경에서 선택(Select) 모드일 때 캔버스 좌/우 터치 시 5초 스킵 (유튜브 스타일)
+                if (currentMode === 'select' && o.e && (o.e.type.includes('touch') || o.e.pointerType === 'touch')) {
+                    const isMobile = window.innerWidth <= 768 || (window.innerWidth <= 950 && window.matchMedia('(orientation: landscape)').matches);
+                    if (isMobile) {
+                        const p = canvas.getPointer(o.e);
+                        if (p.x < canvas.width * 0.3) { handleSkip('rewind'); return; }
+                        if (p.x > canvas.width * 0.7) { handleSkip('forward'); return; }
+                    }
+                }
+
+                if (currentMode === 'select' || currentMode === 'drawPen' || !o.e) return;
+                const p = canvas.getPointer(o.e);
+
+                if (currentMode === 'drawPlayerTag') {
+                    const fs = Math.max(16, currentSize * 0.7); const isR = (p.x > canvas.width / 2); const dir = isR ? -1 : 1;
+                    const text = new fabric.IText('(NR) PLAYER', { fontSize: fs, fill: currentColor, fontFamily: 'S-CoreDream-6Bold', originX: isR ? 'right' : 'left', originY: 'bottom', top: 4, shadow: broadcastShadow });
+                    const line = new fabric.Path([['M', -dir * 18, 28], ['L', 0, 0], ['L', dir * (text.width + 5), 0]], { fill: '', stroke: currentColor, strokeWidth: 3, selectable: false });
+                    const tagGroup = new fabric.Group([line, text], { left: p.x, top: p.y, originX: isR ? 'right' : 'left', originY: 'top', selectable: true, shadow: broadcastShadow, isPlayerTag: true, side: isR ? 'R' : 'L' });
+                    canvas.add(tagGroup); canvas.setActiveObject(tagGroup); setMode('select'); return;
+                }
+                if ((currentMode === 'drawPolyline' || currentMode === 'drawPolygon') && activePoints.length > 0) { const lastPt = activePoints[activePoints.length - 1]; const dist = Math.sqrt(Math.pow(p.x - lastPt.left, 2) + Math.pow(p.y - lastPt.top, 2)); if (dist < 20) return; }
+
+                if (currentMode === 'drawSpot') {
+                    DrawingHandler.createSpot(canvas, p, currentColor, currentSize, currentOpacity);
+                }
+                else if (currentMode === 'drawArrow' || currentMode === 'drawCurve') {
+                    isDrawing = true; startPoint = p;
+                    activeObj = new fabric.Line([p.x, p.y, p.x, p.y], { stroke: currentColor, strokeWidth: 2, strokeDashArray: [5, 5], opacity: 0.5, selectable: false });
+                    canvas.add(activeObj);
+                }
+                else if (currentMode === 'drawPolyline') {
+                    let n;
+                    if (isSpotMode) n = new fabric.Ellipse({ left: p.x, top: p.y, rx: currentSize, ry: currentSize * 0.4, fill: hexToMutedRgba(currentColor, currentOpacity), stroke: getStrokeGradient(currentColor), strokeWidth: 3, originX: 'center', originY: 'center', selectable: false, shadow: new fabric.Shadow({ color: currentColor, blur: 15 }) }); else n = new fabric.Circle({ radius: 4, fill: currentColor, left: p.x, top: p.y, originX: 'center', originY: 'center', selectable: false });
+                    activePoints.push(n); pointArray.push({ x: p.x, y: p.y }); componentArray.push(n); canvas.add(n);
+                    if (pointArray.length > 1) {
+                        const prevNode = activePoints[activePoints.length - 2]; const currNode = activePoints[activePoints.length - 1]; let startX = prevNode.left, startY = prevNode.top; let endX = currNode.left, endY = currNode.top;
+                        if (isSpotMode) { const startOff = getEllipseOffset(prevNode, endX, endY, currentSize, currentSize * 0.4); const endOff = getEllipseOffset(currNode, startX, startY, currentSize, currentSize * 0.4); startX = startOff.x; startY = startOff.y; endX = endOff.x; endY = endOff.y; }
+                        const line = new fabric.Line([startX, startY, endX, endY], { stroke: currentColor, strokeWidth: 3, strokeLineCap: 'round', shadow: broadcastShadow, selectable: false, evented: false, strokeDashArray: typeof isDashed !== 'undefined' && isDashed ? [10, 5] : false }); activeLines.push(line); componentArray.push(line); canvas.add(line); canvas.sendToBack(line);
+                    }
+                    const finishBtn = document.getElementById('btn-finish');
+                    if (finishBtn) finishBtn.classList.add('show');
+                }
+                else if (currentMode === 'drawPolygon') {
+                    const c = new fabric.Circle({ radius: 4, fill: currentColor, left: p.x, top: p.y, originX: 'center', originY: 'center', selectable: false }); activePoints.push(c); pointArray.push({ x: p.x, y: p.y }); canvas.add(c);
+                    if (pointArray.length > 1) { const l = new fabric.Line([pointArray[pointArray.length - 2].x, pointArray[pointArray.length - 2].y, pointArray[pointArray.length - 1].x, pointArray[pointArray.length - 1].y], { stroke: currentColor, strokeWidth: 2, strokeDashArray: [5, 5], selectable: false }); activeLines.push(l); canvas.add(l); }
+                    const finishBtn = document.getElementById('btn-finish'); if (finishBtn) finishBtn.classList.add('show');
+                }
+            });
+
+            canvas.on('mouse:move', o => { if (isDrawing && (currentMode === 'drawArrow' || currentMode === 'drawCurve')) { activeObj.set({ x2: canvas.getPointer(o.e).x, y2: canvas.getPointer(o.e).y }); canvas.renderAll(); } });
+
+            canvas.on('mouse:up', o => {
+                if ((currentMode === 'drawArrow' || currentMode === 'drawCurve') && isDrawing) {
+                    isDrawing = false; const end = canvas.getPointer(o.e); canvas.remove(activeObj);
+                    if (currentMode === 'drawArrow') {
+                        DrawingHandler.createArrow(canvas, startPoint, end, currentColor, currentSize, typeof isDashed !== 'undefined' ? isDashed : false);
+                    } else {
+                        DrawingHandler.startCurve(canvas, startPoint, end, currentColor, currentSize, typeof isDashed !== 'undefined' ? isDashed : false);
+                    }
+                    setMode('select');
+                }
+            });
+
+            canvas.on('mouse:dblclick', e => {
+                if (e.target && e.target.isPlayerTag) {
+                    const textObj = e.target.getObjects().find(o => o.type === 'i-text');
+                    const lineObj = e.target.getObjects().find(o => o.type === 'path');
+                    const newName = prompt("선수 이름 입력:", textObj.text);
+                    if (newName) {
+                        textObj.set('text', newName);
+                        const dir = (e.target.side === 'R') ? -1 : 1;
+                        lineObj.set('path', [['M', -dir * 18, 28], ['L', 0, 0], ['L', dir * (textObj.width + 5), 0]]);
+                        canvas.renderAll();
+                    }
+                    return;
+                }
+                if (!e.target) { if (pointArray.length > 0) { const removeCount = (activePoints.length >= 2) ? 2 : activePoints.length; for (let i = 0; i < removeCount; i++) { const pt = activePoints.pop(); if (pt) canvas.remove(pt); componentArray.pop(); pointArray.pop(); } if (activeLines.length > 0) { const ln1 = activeLines.pop(); canvas.remove(ln1); componentArray.pop(); } if (activeLines.length > 0) { const ln2 = activeLines.pop(); canvas.remove(ln2); componentArray.pop(); } completeDrawing(); } return; }
+                if (e.target.type === 'i-text') { e.target.enterEditing(); e.target.selectAll(); }
+                else if (currentMode === 'drawPolyline' || currentMode === 'drawPolygon') completeDrawing();
+            });
+        } // End of initCanvasEvents
+
+        // --- 📊 데이터 분석 파싱 ---
+        function parseSportsCodeXML(rawText) {
+            let text = rawText || '';
+
+            // 1단계: null bytes 및 비정상 제어문자 제거 (모바일에서 간혹 발생)
+            text = text.replace(/\x00/g, '');
+
+            // 2단계: 첫 '<' 이전의 모든 garbage 제거
+            // (UTF-8 BOM, UTF-16 BOM 잘못 디코딩된 문자, 공백 등 모두 처리)
+            const xmlStart = text.indexOf('<');
+            if (xmlStart < 0) {
+                // '<'가 전혀 없으면 XML이 아닌 다른 포맷 (JSON 등) 가능성
+                const listEl = document.getElementById('dataList');
+                if (listEl) listEl.innerHTML = `<div style="color:#e74c3c; padding:15px; font-size:0.8rem;">⚠️ XML 파싱 오류: XML 태그(&lt;)를 찾을 수 없습니다.<br><code style="font-size:0.75rem; word-break:break-all;">${(text.substring(0, 80) || '(비어있음)').replace(/</g, '&lt;')}</code></div>`;
+                return;
+            }
+            if (xmlStart > 0) text = text.substring(xmlStart);
+            text = text.trim();
+
+            // 3단계: XML 선언부의 인코딩 속성을 'UTF-8'로 강제 정규화
+            // (모바일 DOMParser는 선언부 인코딩이 맞지 않으면 파싱 실패)
+            text = text.replace(/(<\?xml[^>]*?)encoding=["'][^"']*["']/i, '$1encoding="UTF-8"');
+
+            const parser = new DOMParser();
+            let xmlDoc = parser.parseFromString(text, "text/xml");
+
+            // text/xml 실패 시 application/xml 폴백 (iOS Safari 호환)
+            if (xmlDoc.getElementsByTagName("parsererror").length > 0) {
+                xmlDoc = parser.parseFromString(text, "application/xml");
+            }
+
+            if (xmlDoc.getElementsByTagName("parsererror").length > 0) {
+                const preview = text.substring(0, 150).replace(/</g, '&lt;');
+                const listEl = document.getElementById('dataList');
+                if (listEl) listEl.innerHTML = `<div style="color:#e74c3c; padding:15px; font-size:0.8rem;">⚠️ XML 파싱 오류<br><span style="color:#aaa;">수신된 내용 앞부분:</span><br><code style="font-size:0.75rem; word-break:break-all;">${preview || '(비어있음)'}</code></div>`;
+                return;
+            }
+            const instances = xmlDoc.getElementsByTagName("instance");
+            eventList = [];
+            for (let i = 0; i < instances.length; i++) {
+                const inst = instances[i];
+                const start = parseFloat(inst.getElementsByTagName("start")[0]?.textContent || 0);
+                const code = inst.getElementsByTagName("code")[0]?.textContent || "Event";
+                const labels = inst.getElementsByTagName("label");
+                let labelText = labels.length > 0 ? labels[0].getElementsByTagName("text")[0]?.textContent || "" : "";
+                eventList.push({ start, code, label: labelText });
+            }
+            if (eventList.length === 0) {
+                const listEl = document.getElementById('dataList');
+                if (listEl) listEl.innerHTML = '<div style="color:#aaa; padding:15px; font-size:0.85rem;">데이터가 없습니다 (instance 태그 0개).</div>';
+                return;
+            }
+            renderDataList();
+        }
+
+        function renderDataList() {
+            const unit = document.getElementById('timeUnit').value;
+            const listEl = document.getElementById('dataList'); if (!listEl) return; listEl.innerHTML = '';
+            if (!eventList.length) return;
+            const grouped = {};
+            eventList.forEach(ev => { if (!grouped[ev.code]) grouped[ev.code] = []; grouped[ev.code].push(ev); });
+
+            // 이름 가나다순(ABC) 정렬
+            const sortedKeys = Object.keys(grouped).sort((a, b) => a.localeCompare(b));
+
+            for (const code of sortedKeys) {
+                const items = grouped[code];
+                const group = document.createElement('div'); group.className = 'data-group';
+                const header = document.createElement('div'); header.className = 'data-group-header';
+                header.innerHTML = `<i class="fa-solid fa-chevron-right group-toggle-icon"></i><span>${code}</span><span class="group-count">${items.length}</span>`;
+                const content = document.createElement('div'); content.className = 'data-group-content';
+                header.addEventListener('click', () => {
+                    const isHidden = content.style.display === 'none' || content.style.display === '';
+                    content.style.display = isHidden ? 'flex' : 'none';
+                    header.querySelector('.group-toggle-icon').className = isHidden ? 'fa-solid fa-chevron-down group-toggle-icon' : 'fa-solid fa-chevron-right group-toggle-icon';
+                });
+                items.forEach(it => {
+                    const item = document.createElement('div'); item.className = 'data-item';
+                    let t = it.start; if (unit === 'ms') t /= 1000;
+                    item.innerHTML = `<span>${it.label || '-'}</span><span class="scene-time">${formatTime(t)}</span>`;
+                    const timeEl = item.querySelector('.scene-time');
+                    timeEl.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        jumpToTime(t);
+                    });
+                    content.appendChild(item);
+                });
+                group.appendChild(header); group.appendChild(content); listEl.appendChild(group);
+            }
+        }
+
+        // --- 🛠️ 단축키 시스템 ---
+        let shortcutConfig = {
+            'select': { label: '선택 모드', key: 's', btnId: 'btn-select' },
+            'drawPen': { label: '펜/연필', key: 'p', btnId: 'btn-drawPen' },
+            'drawArrow': { label: '직선 화살표', key: 'a', btnId: 'btn-drawArrow' },
+            'drawCurve': { label: '곡선 화살표', key: 'c', btnId: 'btn-drawCurve' },
+            'drawPolyline': { label: '다중 선', key: 'l', btnId: 'btn-drawPolyline' },
+            'drawPolygon': { label: '다각형', key: 'g', btnId: 'btn-drawPolygon' },
+            'drawSpot': { label: '스팟 (하이라이트)', key: 'h', btnId: 'btn-drawSpot' },
+            'drawPlayerTag': { label: '선수 태그', key: 't', btnId: 'btn-drawPlayerTag' },
+            'addText': { label: '텍스트 삽입', key: 'x', btnId: 'btn-addText' },
+            'deleteObj': { label: '선택한 요소 삭제', key: 'Delete', btnId: 'btn-deleteObj' },
+            'clearAll': { label: '전체 드로잉 지우기', key: 'Escape', btnId: 'btn-clearAll' },
+            'videoToggle': { label: '영상 재생/정지', key: ' ', btnId: 'btn-play-scrubber' }
+        };
+
+        function initShortcuts() {
+            const list = document.getElementById('shortcut-list'); if (list) list.innerHTML = '';
+            for (const [id, cfg] of Object.entries(shortcutConfig)) {
+                if (list) {
+                    const row = document.createElement('div'); row.className = 'shortcut-row';
+                    row.innerHTML = `<span>${cfg.label}</span><input type="text" class="shortcut-input" value="${cfg.key === ' ' ? 'Space' : cfg.key}" readonly onclick="this.value='...'">`;
+                    const input = row.querySelector('input');
+                    input.onkeydown = (e) => { e.preventDefault(); cfg.key = e.key; input.value = e.key === ' ' ? 'Space' : e.key; updateShortcutUI(); };
+                    list.appendChild(row);
+                }
+            }
+            updateShortcutUI();
+        }
+
+        function updateShortcutUI() {
+            document.querySelectorAll('.shortcut-badge').forEach(b => b.remove());
+            for (const [id, cfg] of Object.entries(shortcutConfig)) {
+                const btn = document.getElementById(cfg.btnId);
+                if (btn) {
+                    const badge = document.createElement('div');
+                    badge.className = 'shortcut-badge';
+                    let disp = cfg.key.toUpperCase();
+                    if (disp === ' ') disp = 'SPC';
+                    if (disp === 'ESCAPE') disp = 'ESC';
+                    if (disp === 'DELETE') disp = 'DEL';
+                    if (disp === 'ARROWLEFT' || disp === 'ARROWRIGHT' || disp === 'ARROWUP' || disp === 'ARROWDOWN') disp = 'KEY';
+                    badge.innerText = disp;
+                    btn.appendChild(badge);
+                }
+            }
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'INPUT' && e.target.type !== 'range') return;
+            if (e.target.tagName === 'TEXTAREA' || (e.target.isContentEditable && e.target.tagName !== 'BODY')) return;
+            const key = e.key;
+            if (key === shortcutConfig.select.key) setMode('select');
+            else if (key === shortcutConfig.drawPen.key) setMode('drawPen');
+            else if (key === shortcutConfig.drawArrow.key) setMode('drawArrow');
+            else if (key === shortcutConfig.drawCurve.key) setMode('drawCurve');
+            else if (key === shortcutConfig.drawPolyline.key) setMode('drawPolyline');
+            else if (key === shortcutConfig.drawPolygon.key) setMode('drawPolygon');
+            else if (key === shortcutConfig.drawSpot.key) setMode('drawSpot');
+            else if (key === shortcutConfig.drawPlayerTag.key) setMode('drawPlayerTag');
+            else if (key === shortcutConfig.addText.key) addText();
+            else if (key === shortcutConfig.deleteObj.key) deleteObject();
+            else if (key === shortcutConfig.clearAll.key) clearAll();
+            else if (key === ' ' || key === shortcutConfig.videoToggle.key) { e.preventDefault(); videoControl('toggle'); }
+            else if (key === 'ArrowLeft') { e.preventDefault(); videoControl('rewind'); }
+            else if (key === 'ArrowRight') { e.preventDefault(); videoControl('forward'); }
+        });
+
+        function completeDrawing() {
+            DrawingHandler.completeComplexShape(canvas, currentMode, pointArray, activePoints, activeLines, currentColor, currentOpacity, typeof isDashed !== 'undefined' ? isDashed : false);
+            resetDrawing(); setMode('select');
+        }
+
+        // --- 기타 유틸리티 ---
+        async function startCleanRecording() {
+            const selectedScenes = savedScenes.filter(s => s.isSelected !== false);
+            if(selectedScenes.length === 0) return alert("녹화할 장면을 선택해주세요.");
+            if(currentMediaType === 'none' || currentMediaType === 'image') return alert("시퀀스 추출은 비디오(로컬/유튜브) 모드에서만 지원합니다.");
+
+            const preRollStr = prompt("1. 분석 지점 [몇 초 전]부터 영상을 재생할까요?", "1.5");
+            if (preRollStr === null) return;
+            const holdTimeStr = prompt("2. 그림이 그려진 [정지 화면]을 몇 초 유지할까요?", "3.0");
+            if (holdTimeStr === null) return;
+            const postRollStr = prompt("3. 그림이 사라진 후 [몇 초 더] 재생할까요?", "1.0");
+            if (postRollStr === null) return;
+
+            const preRoll = parseFloat(preRollStr) || 1.5;
+            const holdTime = (parseFloat(holdTimeStr) || 3.0) * 1000; 
+            const postRoll = parseFloat(postRollStr) || 0;
+
+            const localVideo = document.getElementById('local-video');
+            const recCanvas = document.createElement('canvas');
+            recCanvas.width = canvas.width || 1280;
+            recCanvas.height = canvas.height || 720;
+            const ctx = recCanvas.getContext('2d');
+
+            let screenStream = null;
+            let screenVideo = null;
+
+            if (currentMediaType === 'youtube') {
+                alert("⚠️ 유튜브 영상 추출 안내 ⚠️\n\n브라우저 보안 정책으로 인해 화면 캡처 방식을 사용합니다.\n다음 팝업에서 반드시 [이 탭(현재 탭)]을 선택하고 공유를 허용해주세요.");
+                try {
+                    screenStream = await navigator.mediaDevices.getDisplayMedia({ preferCurrentTab: true, video: { displaySurface: 'browser' } });
+                    screenVideo = document.createElement('video');
+                    screenVideo.srcObject = screenStream;
+                    screenVideo.muted = true;
+                    screenVideo.play();
+                    await new Promise(r => screenVideo.onloadedmetadata = r);
+                } catch(e) {
+                    return alert("화면 공유 권한이 거부되어 유튜브 녹화를 취소합니다.");
+                }
+            }
+
+            const stream = recCanvas.captureStream(60);
+            let options = { mimeType: 'video/webm; codecs=vp9', videoBitsPerSecond: 15000000 };
+            let ext = 'webm';
+            
+            if (MediaRecorder.isTypeSupported('video/mp4')) { 
+                options = { mimeType: 'video/mp4', videoBitsPerSecond: 15000000 }; 
+                ext = 'mp4'; 
+            } else if (MediaRecorder.isTypeSupported('video/webm; codecs=h264')) { 
+                options = { mimeType: 'video/webm; codecs=h264', videoBitsPerSecond: 15000000 }; 
+                ext = 'mp4'; 
+            }
+            
+            const recorder = new MediaRecorder(stream, options);
+            const chunks = [];
+            recorder.ondataavailable = e => chunks.push(e.data);
+            
+            // 🔄 UI 요소 제어 변수 (녹화 화면에 UI가 캡처되는 것 방지)
+            const topMenu = document.querySelector('.top-menu');
+            const toggleArea = document.querySelector('.sidebar-toggle-area');
+            const statusMsg = document.getElementById('status-msg');
+            const guideMsg = document.getElementById('guide-msg');
+            const versionDisplay = document.querySelector('.version-display');
+
+            recorder.onstop = () => {
+                const blob = new Blob(chunks, { type: options.mimeType });
+                const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+                a.download = `Tactical_Analysis_${Date.now()}.${ext}`; a.click();
+                if (screenStream) screenStream.getTracks().forEach(t => t.stop());
+
+                // 🔄 숨긴 UI 복구
+                if (topMenu) topMenu.style.display = '';
+                if (toggleArea) toggleArea.style.display = '';
+                if (guideMsg) guideMsg.style.display = '';
+                if (versionDisplay) versionDisplay.style.display = '';
+                if (statusMsg) {
+                    statusMsg.style.top = '30px';
+                    statusMsg.style.bottom = 'auto';
+                }
+            };
+
+            let isRecordingLoop = true;
+            const mediaContainer = document.getElementById('mediaContainer');
+
+            function renderComposite() {
+                if(!isRecordingLoop) return;
+
+                if (currentMediaType === 'youtube' && screenVideo) {
+                    const rect = mediaContainer.getBoundingClientRect();
+                    const scaleX = screenVideo.videoWidth / window.innerWidth;
+                    const scaleY = screenVideo.videoHeight / window.innerHeight;
+                    const cropX = rect.left * scaleX;
+                    const cropY = rect.top * scaleY;
+                    const cropW = rect.width * scaleX;
+                    const cropH = rect.height * scaleY;
+
+                    ctx.drawImage(screenVideo, cropX, cropY, cropW, cropH, 0, 0, recCanvas.width, recCanvas.height);
+                } else if (currentMediaType === 'local') {
+                    if(localVideo && localVideo.readyState >= 2) {
+                        ctx.drawImage(localVideo, 0, 0, recCanvas.width, recCanvas.height);
+                    } else {
+                        ctx.fillStyle = "black"; ctx.fillRect(0,0, recCanvas.width, recCanvas.height);
+                    }
+                    if (canvas && canvas.getElement()) {
+                        ctx.drawImage(canvas.getElement(), 0, 0, recCanvas.width, recCanvas.height);
+                    }
+                }
+                
+                requestAnimationFrame(renderComposite);
+            }
+
+            // ✂️ 녹화 영역(mediaContainer)에 겹치는 UI 숨기거나 영역 밖으로 이동
+            if (topMenu) topMenu.style.display = 'none';
+            if (toggleArea) toggleArea.style.display = 'none';
+            if (guideMsg) guideMsg.style.display = 'none';
+            if (versionDisplay) versionDisplay.style.display = 'none';
+            if (statusMsg) {
+                statusMsg.style.top = 'auto';
+                // bottom-panel(70px) 내부로 위치시켜 mediaContainer 캡처 영역에서 제외
+                statusMsg.style.bottom = '15px'; 
+            }
+
+            recorder.start();
+            renderComposite();
+            showStatus(`선택된 장면 영상 추출 중... (${ext})`, true);
+
+            const timeline = [...selectedScenes].sort((a,b) => a.time - b.time);
+            
+            for (let s of timeline) {
+                let targetTime = Math.max(0, s.time - preRoll);
+
+                if (currentMediaType === 'local') {
+                    if (localVideo) localVideo.currentTime = targetTime;
+                    await new Promise(res => {
+                        const onSeeked = () => { if(localVideo) localVideo.removeEventListener('seeked', onSeeked); res(); };
+                        if (localVideo && localVideo.seeking) localVideo.addEventListener('seeked', onSeeked); else res();
+                    });
+                    if (canvas) canvas.clear(); 
+                    if (localVideo) localVideo.play();
+                    await new Promise(res => {
+                        const check = () => {
+                            if(localVideo && localVideo.currentTime >= s.time) { localVideo.pause(); res(); }
+                            else requestAnimationFrame(check);
+                        }; check();
+                    });
+                } else if (currentMediaType === 'youtube' && isYtReady && ytPlayer && ytPlayer.seekTo) {
+                    ytPlayer.seekTo(targetTime, true);
+                    if (canvas) canvas.clear();
+                    ytPlayer.playVideo();
+                    await new Promise(res => {
+                        const check = () => {
+                            if(ytPlayer.getCurrentTime() >= s.time) { ytPlayer.pauseVideo(); res(); }
+                            else requestAnimationFrame(check);
+                        }; check();
+                    });
+                }
+
+                await new Promise(res => {
+                    if (canvas) {
+                        canvas.loadFromJSON(s.art, () => {
+                            canvas.renderAll();
+                            setTimeout(res, holdTime); 
+                        });
+                    } else {
+                        setTimeout(res, holdTime);
+                    }
+                });
+                if (canvas) canvas.clear();
+
+                if (postRoll > 0) {
+                    if (currentMediaType === 'local') {
+                        if (localVideo) localVideo.play();
+                        const endPostRollTime = (localVideo ? localVideo.currentTime : 0) + postRoll;
+                        await new Promise(res => {
+                            const checkPost = () => {
+                                if(localVideo && (localVideo.currentTime >= endPostRollTime || localVideo.currentTime >= localVideo.duration)) { 
+                                    localVideo.pause(); res(); 
+                                } else requestAnimationFrame(checkPost);
+                            }; checkPost();
+                        });
+                    } else if (currentMediaType === 'youtube' && isYtReady && ytPlayer && ytPlayer.playVideo) {
+                        ytPlayer.playVideo();
+                        const endPostRollTime = ytPlayer.getCurrentTime() + postRoll;
+                        const duration = ytPlayer.getDuration();
+                        await new Promise(res => {
+                            const checkPost = () => {
+                                if(ytPlayer.getCurrentTime() >= endPostRollTime || ytPlayer.getCurrentTime() >= duration) { 
+                                    ytPlayer.pauseVideo(); res(); 
+                                } else requestAnimationFrame(checkPost);
+                            }; checkPost();
+                        });
+                    }
+                }
+            }
+
+            isRecordingLoop = false;
+            recorder.stop();
+            showStatus("영상 추출 완료!");
+        }
+        function saveShortcuts() { alert("저장되었습니다."); toggleHelp(); }
+        function deleteObject() { if (!canvas) return; const active = canvas.getActiveObjects(); if (active.length) { canvas.discardActiveObject(); active.forEach(o => canvas.remove(o)); } }
+        function clearAll() { if (!canvas) return; if (confirm("모두 삭제할까요?")) canvas.clear(); }
+        function resetDrawing() { pointArray = []; activePoints = []; activeLines = []; componentArray = []; isDrawing = false; document.getElementById('btn-finish').classList.remove('show'); }
+        function formatTime(s) { if (isNaN(s) || !isFinite(s)) return "0:00"; const m = Math.floor(s / 60); const sec = Math.floor(s % 60); return `${m}:${sec < 10 ? '0' + sec : sec}`; }
+        function jumpToTime(s) { const t = s + timeOffset; if (currentMediaType === 'youtube' && isYtReady) ytPlayer.seekTo(t, true); else if (currentMediaType === 'local') { const v = document.getElementById('local-video'); if (v) v.currentTime = t; } }
+        function adjustSync(v) { timeOffset += v; document.getElementById('syncDisplay').innerText = `Sync: ${timeOffset.toFixed(1)}s`; }
+        function toggleHelp() { const m = document.getElementById('helpModal'); m.style.display = m.style.display === 'flex' ? 'none' : 'flex'; }
+
+        // --- 🎨 Drawing Handler Core (Provided by User) ---
+        const DrawingHandler = {
+            createSpot: function (canvas, p, color, size, opacity) {
+                const spot = new fabric.Ellipse({
+                    left: p.x, top: p.y, rx: size, ry: size * 0.4,
+                    fill: hexToMutedRgba(color, opacity), stroke: getStrokeGradient(color), strokeWidth: 4,
+                    originX: 'center', originY: 'center', shadow: new fabric.Shadow({ color: color, blur: 20 })
+                });
+                canvas.add(spot);
+            },
+            createArrow: function (canvas, s, e, color, size, isDashed) {
+                const headSize = size; const angle = Math.atan2(e.y - s.y, e.x - s.x) * 180 / Math.PI; const lineLen = Math.sqrt(Math.pow(e.x - s.x, 2) + Math.pow(e.y - s.y, 2)); const midX = (s.x + e.x) / 2; const midY = (s.y + e.y) / 2;
+                const linePath = `M ${-lineLen / 2} 0 L ${lineLen / 2 - headSize + 5} 0`;
+                const line = new fabric.Path(linePath, { stroke: color, strokeWidth: 4, strokeDashArray: isDashed ? [10, 5] : false, fill: '', originX: 'center', originY: 'center' });
+                const head = new fabric.Triangle({ width: headSize, height: headSize, fill: color, angle: 90, left: lineLen / 2, top: 0, originX: 'center', originY: 'center' });
+                const arrowGroup = new fabric.Group([line, head], { left: midX, top: midY, angle: angle, originX: 'center', originY: 'center', shadow: new fabric.Shadow({ color: 'rgba(0,0,0,0.8)', blur: 8, offsetX: 2, offsetY: 2 }) });
+                canvas.add(arrowGroup);
+            },
+            startCurve: function (canvas, s, e, color, size, isDashed) {
+                const mid = { x: (s.x + e.x) / 2, y: (s.y + e.y) / 2 }; const cp = { x: mid.x, y: mid.y - 50 };
+                const curve = new fabric.CurvedArrow(s, cp, e, { stroke: color, strokeWidth: 4, headSize: size, strokeDashArray: isDashed ? [10, 5] : false, objectCaching: false });
+                canvas.add(curve); canvas.setActiveObject(curve);
+            },
+            completeComplexShape: function (canvas, mode, pointArray, activePoints, activeLines, color, opacity, isDashed) {
+                if (pointArray.length < 2) return;
+                if (mode === 'drawPolyline') {
+                    const objects = canvas.getObjects().filter(obj => activePoints.includes(obj) || activeLines.includes(obj));
+                    const group = new fabric.Group(objects, { selectable: true });
+                    objects.forEach(o => canvas.remove(o)); canvas.add(group);
+                } else if (mode === 'drawPolygon') {
+                    const poly = new fabric.Polygon(pointArray, { fill: hexToMutedRgba(color, opacity), stroke: color, strokeWidth: 2, strokeDashArray: isDashed ? [10, 5] : false, objectCaching: false });
+                    activePoints.concat(activeLines).forEach(o => canvas.remove(o)); canvas.add(poly); canvas.setActiveObject(poly);
+                }
+            }
+        };
+
+        fabric.CurvedArrow = fabric.util.createClass(fabric.Object, {
+            type: 'curvedArrow',
+            initialize: function (p0, p1, p2, options) {
+                this.p0 = p0; this.p1 = p1; this.p2 = p2; options = options || {}; this.callSuper('initialize', options);
+                this.headSize = options.headSize || 30; this.strokeWidth = options.strokeWidth || 5; this.stroke = options.stroke || '#fff'; this.strokeDashArray = options.strokeDashArray || false;
+                this._updateBoundingBox(); this.prevLeft = this.left; this.prevTop = this.top;
+                this.on('moving', () => { const dx = this.left - this.prevLeft; const dy = this.top - this.prevTop;[this.p0, this.p1, this.p2].forEach(p => { p.x += dx; p.y += dy; }); this.prevLeft = this.left; this.prevTop = this.top; });
+                this.on('selected', () => { this.prevLeft = this.left; this.prevTop = this.top; });
+            },
+            _updateBoundingBox: function () { const minX = Math.min(this.p0.x, this.p1.x, this.p2.x); const maxX = Math.max(this.p0.x, this.p1.x, this.p2.x); const minY = Math.min(this.p0.y, this.p1.y, this.p2.y); const maxY = Math.max(this.p0.y, this.p1.y, this.p2.y); this.left = minX; this.top = minY; this.width = maxX - minX; this.height = maxY - minY; },
+            _render: function (ctx) {
+                ctx.save(); ctx.beginPath(); ctx.lineWidth = this.strokeWidth; ctx.strokeStyle = this.stroke; ctx.lineCap = 'round'; if (this.strokeDashArray) ctx.setLineDash(this.strokeDashArray);
+                const p0 = this.toLocalPoint(new fabric.Point(this.p0.x, this.p0.y), 'center', 'center'); const p1 = this.toLocalPoint(new fabric.Point(this.p1.x, this.p1.y), 'center', 'center'); const p2 = this.toLocalPoint(new fabric.Point(this.p2.x, this.p2.y), 'center', 'center');
+                ctx.moveTo(p0.x, p0.y); ctx.quadraticCurveTo(p1.x, p1.y, p2.x, p2.y); ctx.stroke(); ctx.setLineDash([]);
+                let dx = p2.x - p1.x; let dy = p2.y - p1.y; if (dx === 0 && dy === 0) { dx = p1.x - p0.x; dy = p1.y - p0.y; }
+                const angle = Math.atan2(dy, dx); ctx.translate(p2.x, p2.y); ctx.rotate(angle); ctx.beginPath(); const s = this.headSize; ctx.moveTo(0, 0); ctx.lineTo(-s, s / 2); ctx.lineTo(-s, -s / 2); ctx.closePath(); ctx.fillStyle = this.stroke; ctx.fill(); ctx.restore();
+            }
+        });
+
+        fabric.CurvedArrow.prototype.controls = {};
+        function createControl(key, color) { return new fabric.Control({ position: { x: 0, y: 0 }, actionName: key, cursorStyle: 'pointer', actionHandler: function (eventData, transform, x, y) { const target = transform.target; target[key] = { x: x, y: y }; target._updateBoundingBox(); target.prevLeft = target.left; target.prevTop = target.top; return true; }, positionHandler: function (dim, finalMatrix, fabricObject) { const point = fabricObject[key]; return fabric.util.transformPoint(new fabric.Point(point.x, point.y), canvas.viewportTransform); }, render: function (ctx, left, top, styleOverride, fabricObject) { ctx.save(); ctx.translate(left, top); ctx.beginPath(); ctx.arc(0, 0, 6, 0, 2 * Math.PI); ctx.fillStyle = color; ctx.strokeStyle = '#000'; ctx.lineWidth = 1; ctx.fill(); ctx.stroke(); ctx.restore(); } }); }
+        fabric.CurvedArrow.prototype.controls.p0 = createControl('p0', '#ffffff'); fabric.CurvedArrow.prototype.controls.p1 = createControl('p1', '#3498db'); fabric.CurvedArrow.prototype.controls.p2 = createControl('p2', '#ffffff');
+
+        function openTab(id) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            const content = document.getElementById(id);
+            if (content) content.classList.add('active');
+            // 대응하는 탭 버튼도 active 처리
+            const btnId = 'tab-btn-' + id.replace('tab-', '');
+            const btn = document.getElementById(btnId);
+            if (btn) btn.classList.add('active');
+        }
+        function toggleSceneSidebar() { document.getElementById('sceneSidebar').classList.toggle('closed'); document.getElementById('sceneToggleIcon').className = document.getElementById('sceneSidebar').classList.contains('closed') ? 'fa-solid fa-chevron-left' : 'fa-solid fa-chevron-right'; setTimeout(resizeCanvas, 350); }
+        function setColor(hex, el) { currentColor = hex; document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected')); el.classList.add('selected'); if (canvas && canvas.isDrawingMode) canvas.freeDrawingBrush.color = hex; }
+
+        function togglePalm() { isPalmRejection = !isPalmRejection; document.getElementById('btn-palm').classList.toggle('active'); }
+        function switchModalTab(t) { document.getElementById('m-guide').classList.toggle('active', t === 'guide'); document.getElementById('m-shortcuts').classList.toggle('active', t === 'shortcuts'); if (t === 'shortcuts') initShortcuts(); }
+        function showStatus(m, rec = false) { const el = document.getElementById('status-msg'); el.innerText = m; el.style.display = 'block'; if (!rec) setTimeout(() => el.style.display = 'none', 3000); }
+        function saveScene() {
+            if(!canvas) return;
+            const art = JSON.stringify(canvas.toJSON());
+            const localVideo = document.getElementById('local-video');
+            let time = 0; if(currentMediaType === 'local' && localVideo) time = localVideo.currentTime; else if(currentMediaType === 'youtube' && isYtReady) time = ytPlayer.getCurrentTime();
+            const sceneId = Date.now(); const scene = { id: sceneId, art: art, time: time, type: currentMediaType, label: `Scene ${savedScenes.length + 1}`, isSelected: true };
+            savedScenes.push(scene); renderSceneList(); 
+            showStatus("현재 장면이 저장되었습니다.");
+            
+            setTimeout(() => {
+                if(confirm("장면이 안전하게 저장되었습니다!\n새로운 장면 분석을 위해 화면의 그림을 지울까요?")) {
+                    canvas.clear();
+                }
+            }, 100);
+        }
+
+        function loadScene(id) {
+            const scene = savedScenes.find(s => s.id === id); if(!scene) return;
+            if(scene.type !== currentMediaType && scene.type !== 'image') { if(!confirm("미디어 소스가 다릅니다. 전환하시겠습니까?")) return; }
+            canvas.loadFromJSON(scene.art, canvas.renderAll.bind(canvas));
+            const localVideo = document.getElementById('local-video');
+            if(scene.type === 'local' && localVideo) localVideo.currentTime = scene.time; else if(scene.type === 'youtube' && isYtReady && ytPlayer && ytPlayer.seekTo) ytPlayer.seekTo(scene.time, true);
+            showStatus("장면을 불러왔습니다.");
+        }
+
+        function removeScene(id, event) { 
+            event.stopPropagation(); 
+            savedScenes = savedScenes.filter(s => s.id !== id); 
+            renderSceneList(); 
+        }
+        
+        function renderSceneList() {
+            const listEl = document.getElementById('sceneList'); 
+            if(!listEl) return;
+            listEl.innerHTML = '';
+            savedScenes.forEach(scene => {
+                let timeStr = (scene.type === 'image') ? 'Image' : formatTime(scene.time);
+                const item = document.createElement('div'); item.className = 'scene-item';
+                item.innerHTML = `
+                    <div style="display:flex; align-items:center; gap:10px; width:calc(100% - 25px);">
+                        <input type="checkbox" ${scene.isSelected ? 'checked' : ''} onchange="toggleSceneSelection(${scene.id}, event)" style="transform: scale(1.2); cursor: pointer; flex-shrink: 0;" title="녹화 포함">
+                        <div class="scene-info" onclick="loadScene(${scene.id})" title="장면으로 이동" style="cursor: pointer;">
+                            <span class="scene-title" style="color:#fff; font-size:0.95rem;">${scene.label}</span>
+                            <span class="scene-time" style="background:rgba(231,76,60,0.1); padding:2px 5px; border-radius:3px;"><i class="fa-regular fa-clock"></i> ${timeStr}</span>
+                        </div>
+                    </div>
+                    <button class="scene-del-btn" onclick="removeScene(${scene.id}, event)" title="장면 삭제"><i class="fa-solid fa-xmark"></i></button>
+                `;
+                listEl.appendChild(item);
+            });
+        }
+
+        function toggleSceneSelection(id, event) {
+            const scene = savedScenes.find(s => s.id === id);
+            if (scene) {
+                scene.isSelected = event.target.checked;
+            }
+        }
+        function loadAdminConfig() { const saved = localStorage.getItem('gh_admin_config'); if (saved) { const cfg = JSON.parse(saved); if (cfg.token) document.getElementById('gh-token').value = cfg.token; if (cfg.owner) document.getElementById('gh-owner').value = cfg.owner; if (cfg.repo) document.getElementById('gh-repo').value = cfg.repo; } }
+        function saveAdminConfig() { const cfg = { token: document.getElementById('gh-token').value, owner: document.getElementById('gh-owner').value, repo: document.getElementById('gh-repo').value }; localStorage.setItem('gh_admin_config', JSON.stringify(cfg)); }
+        function toggleLang() { }
+        function addText() { if (!canvas) return; const t = new fabric.IText('텍스트', { left: canvas.width / 2, top: canvas.height / 2, fill: currentColor, fontFamily: 'S-CoreDream-6Bold', fontSize: 30 }); canvas.add(t); canvas.setActiveObject(t); }
+    </script>
+</body>
+
+</html>
