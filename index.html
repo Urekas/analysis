@@ -501,6 +501,92 @@
             margin-left: auto;
         }
 
+        /* 불러오기 컴팩트 체크박스 */
+        .group-check {
+            appearance: none; -webkit-appearance: none;
+            width: 18px; height: 18px;
+            border: 2px solid #666;
+            border-radius: 4px;
+            cursor: pointer;
+            flex-shrink: 0;
+            background: transparent;
+            position: relative;
+            transition: all 0.15s;
+        }
+        .group-check:checked {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+        .group-check:checked::after {
+            content: '';
+            position: absolute;
+            left: 3px; top: 1px;
+            width: 8px; height: 5px;
+            border-left: 2px solid #fff;
+            border-bottom: 2px solid #fff;
+            transform: rotate(-45deg);
+        }
+        .data-group-header.checked {
+            border-color: var(--accent);
+            background: #4a2a2a;
+        }
+
+        /* 플로팅 빠른탐색 핀 */
+        #quick-nav-pill {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(20,20,20,0.92);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(231,76,60,0.5);
+            border-radius: 50px;
+            padding: 8px 14px;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            z-index: 3000;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+            white-space: nowrap;
+            max-width: 90vw;
+        }
+        #quick-nav-pill.visible { display: flex; }
+        .qn-btn {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: #fff;
+            font-size: 1.1rem;
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.15s;
+            flex-shrink: 0;
+        }
+        .qn-btn:active { background: var(--accent); }
+        .qn-label {
+            font-size: 0.8rem;
+            color: #ccc;
+            text-align: center;
+            min-width: 60px;
+        }
+        .qn-label strong {
+            color: #fff;
+            font-size: 1rem;
+            display: block;
+        }
+        .qn-close {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 4px;
+            line-height: 1;
+        }
+        .qn-close:active { color: #fff; }
+
         .data-group-content {
             display: none;
             flex-direction: column;
@@ -1240,6 +1326,23 @@
             </div>
             <div id="dataList"></div>
         </div>
+    </div>
+
+    <!-- 빠른 타임스탬프 탐색 핀 -->
+    <div id="quick-nav-pill">
+        <button class="qn-btn" onclick="quickNavPrev()" title="이전 장면">
+            <i class="fa-solid fa-chevron-left"></i>
+        </button>
+        <div class="qn-label">
+            <span id="qn-counter">1 / 1</span>
+            <span id="qn-code" style="font-size:0.7rem; color:#e74c3c; margin-top:2px; display:block;"></span>
+        </div>
+        <button class="qn-btn" onclick="quickNavNext()" title="다음 장면">
+            <i class="fa-solid fa-chevron-right"></i>
+        </button>
+        <button class="qn-close" onclick="clearQuickNav()" title="닫기">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
     </div>
 
     <!-- GitHub 매치 센터 모달 -->
@@ -2550,30 +2653,132 @@
             // 이름 가나다순(ABC) 정렬
             const sortedKeys = Object.keys(grouped).sort((a, b) => a.localeCompare(b));
 
+            // 이전 체크 상태 보존
+            const prevChecked = new Set();
+            document.querySelectorAll('.group-check:checked').forEach(cb => prevChecked.add(cb.dataset.code));
+
             for (const code of sortedKeys) {
                 const items = grouped[code];
                 const group = document.createElement('div'); group.className = 'data-group';
                 const header = document.createElement('div'); header.className = 'data-group-header';
-                header.innerHTML = `<i class="fa-solid fa-chevron-right group-toggle-icon"></i><span>${code}</span><span class="group-count">${items.length}</span>`;
+
+                // 체크박스
+                const cb = document.createElement('input');
+                cb.type = 'checkbox'; cb.className = 'group-check';
+                cb.dataset.code = code;
+                if (prevChecked.has(code)) { cb.checked = true; header.classList.add('checked'); }
+                cb.addEventListener('change', (e) => {
+                    e.stopPropagation();
+                    header.classList.toggle('checked', cb.checked);
+                    updateQuickNav();
+                });
+                cb.addEventListener('click', e => e.stopPropagation());
+
+                header.appendChild(cb);
+                const icon = document.createElement('i'); icon.className = 'fa-solid fa-chevron-right group-toggle-icon';
+                header.appendChild(icon);
+                const nameSpan = document.createElement('span'); nameSpan.textContent = code;
+                header.appendChild(nameSpan);
+                const countBadge = document.createElement('span'); countBadge.className = 'group-count'; countBadge.textContent = items.length;
+                header.appendChild(countBadge);
+
                 const content = document.createElement('div'); content.className = 'data-group-content';
                 header.addEventListener('click', () => {
                     const isHidden = content.style.display === 'none' || content.style.display === '';
                     content.style.display = isHidden ? 'flex' : 'none';
-                    header.querySelector('.group-toggle-icon').className = isHidden ? 'fa-solid fa-chevron-down group-toggle-icon' : 'fa-solid fa-chevron-right group-toggle-icon';
+                    icon.className = isHidden ? 'fa-solid fa-chevron-down group-toggle-icon' : 'fa-solid fa-chevron-right group-toggle-icon';
                 });
                 items.forEach(it => {
                     const item = document.createElement('div'); item.className = 'data-item';
                     let t = it.start; if (unit === 'ms') t /= 1000;
                     item.innerHTML = `<span>${it.label || '-'}</span><span class="scene-time">${formatTime(t)}</span>`;
                     const timeEl = item.querySelector('.scene-time');
-                    timeEl.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        jumpToTime(t);
-                    });
+                    timeEl.addEventListener('click', (e) => { e.stopPropagation(); jumpToTime(t); });
                     content.appendChild(item);
                 });
                 group.appendChild(header); group.appendChild(content); listEl.appendChild(group);
             }
+            updateQuickNav();
+        }
+
+        // --- ⚡ 빠른 타임스탬프 탐색 ---
+        let quickNavList = [];   // 정렬된 타임스탬프 목록 [{time, code, label}]
+        let quickNavIdx = 0;
+
+        function updateQuickNav() {
+            const unit = document.getElementById('timeUnit')?.value || 'sec';
+            const checked = document.querySelectorAll('.group-check:checked');
+            if (!checked.length) { clearQuickNav(); return; }
+
+            const selectedCodes = new Set([...checked].map(cb => cb.dataset.code));
+            const grouped = {};
+            eventList.forEach(ev => { if (!grouped[ev.code]) grouped[ev.code] = []; grouped[ev.code].push(ev); });
+
+            quickNavList = [];
+            eventList.forEach(ev => {
+                if (!selectedCodes.has(ev.code)) return;
+                let t = ev.start;
+                if (unit === 'ms') t /= 1000;
+                quickNavList.push({ time: t, code: ev.code, label: ev.label || '' });
+            });
+            quickNavList.sort((a, b) => a.time - b.time);
+
+            if (!quickNavList.length) { clearQuickNav(); return; }
+
+            // 현재 영상 위치에 가장 가까운 인덱스로 의가
+            const currentTime = getCurrentVideoTime();
+            let closest = 0;
+            let minDiff = Infinity;
+            quickNavList.forEach((item, i) => {
+                const diff = Math.abs(item.time - currentTime);
+                if (diff < minDiff) { minDiff = diff; closest = i; }
+            });
+            quickNavIdx = closest;
+
+            renderQuickNav();
+            const pill = document.getElementById('quick-nav-pill');
+            if (pill) pill.classList.add('visible');
+        }
+
+        function renderQuickNav() {
+            const counter = document.getElementById('qn-counter');
+            const codeEl = document.getElementById('qn-code');
+            if (!quickNavList.length) return;
+            const cur = quickNavList[quickNavIdx];
+            if (counter) counter.textContent = `${quickNavIdx + 1} / ${quickNavList.length}`;
+            if (codeEl) codeEl.textContent = `${cur.code}${cur.label ? ' · ' + cur.label : ''}`;
+        }
+
+        function quickNavNext() {
+            if (!quickNavList.length) return;
+            quickNavIdx = (quickNavIdx + 1) % quickNavList.length;
+            jumpToTime(quickNavList[quickNavIdx].time);
+            renderQuickNav();
+        }
+
+        function quickNavPrev() {
+            if (!quickNavList.length) return;
+            quickNavIdx = (quickNavIdx - 1 + quickNavList.length) % quickNavList.length;
+            jumpToTime(quickNavList[quickNavIdx].time);
+            renderQuickNav();
+        }
+
+        function clearQuickNav() {
+            quickNavList = []; quickNavIdx = 0;
+            const pill = document.getElementById('quick-nav-pill');
+            if (pill) pill.classList.remove('visible');
+            document.querySelectorAll('.group-check').forEach(cb => {
+                cb.checked = false;
+                const hdr = cb.closest('.data-group-header');
+                if (hdr) hdr.classList.remove('checked');
+            });
+        }
+
+        function getCurrentVideoTime() {
+            const localVid = document.getElementById('local-video');
+            if (currentMediaType === 'local' && localVid) return localVid.currentTime || 0;
+            if (currentMediaType === 'youtube' && isYtReady && ytPlayer && typeof ytPlayer.getCurrentTime === 'function') return ytPlayer.getCurrentTime() || 0;
+            return 0;
         }
 
         // --- 🛠️ 단축키 시스템 ---
