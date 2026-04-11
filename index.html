@@ -146,7 +146,12 @@
             height: 100%;
             display: none;
             z-index: 1;
-            pointer-events: none;
+        }
+
+        /* youtube-player 안의 iframe도 100%로 채우기 */
+        #youtube-player iframe {
+            width: 100%;
+            height: 100%;
         }
 
         #local-video {
@@ -167,6 +172,17 @@
             width: 100%;
             height: 100%;
             z-index: 5;
+            /* 데스크톱: pointer-events 기본값 유지 (default) - 도형 선택/이동 정상 작동 */
+        }
+
+        /* 모바일에서만: 기본적으로 캔버스 터치 비활성 (select 모드에서 영상 조작 허용) */
+        @media (max-width: 768px), (max-width: 950px) and (orientation: landscape) {
+            .canvas-wrapper {
+                pointer-events: none;
+            }
+            .canvas-wrapper.drawing-active {
+                pointer-events: auto;
+            }
         }
 
         /* 스크러버 */
@@ -1599,24 +1615,34 @@
             }
         }
 
+        // 드로잉 모드 활성화 여부로 캔버스 터치 제어
+        function setDrawingActive(isActive) {
+            const cw = document.getElementById('canvasWrapper');
+            if (!cw) return;
+            if (isActive) {
+                cw.classList.add('drawing-active');
+            } else {
+                cw.classList.remove('drawing-active');
+            }
+        }
+
         function toggleVideoInteraction() {
             isVideoInteractive = !isVideoInteractive;
-            const yt = document.getElementById('youtube-player');
-            const cw = document.getElementById('canvasWrapper');
             const btn = document.getElementById('btn-video-touch');
 
             if (isVideoInteractive) {
-                if (yt) yt.style.pointerEvents = 'auto';
-                if (cw) cw.style.pointerEvents = 'none';
+                // 영상 조작 모드: 캔버스 터치 비활성
+                setDrawingActive(false);
                 if (btn) btn.classList.add('active');
                 showStatus("영상 조작 모드 (추천영상 끄기 가능)");
             } else {
-                if (yt) yt.style.pointerEvents = 'none';
-                if (cw) cw.style.pointerEvents = 'auto';
+                // 드로잉 모드: 캔버스 터치 활성
+                setDrawingActive(true);
                 if (btn) btn.classList.remove('active');
                 showStatus("드로잉 모드");
             }
         }
+
 
         function toggleMobileTools() {
             const sb = document.querySelector('.sidebar');
@@ -2366,7 +2392,11 @@
             }
             if (canvas) canvas.requestRenderAll();
             resetDrawing();
+
+            // 모바일: 선택 모드에서는 영상 터치 허용, 드로잉 도구 선택 시에만 캔버스 터치 활성화
+            setDrawingActive(mode !== 'select');
         }
+
 
         function initCanvasEvents() {
             canvas.on('mouse:down', function (o) {
