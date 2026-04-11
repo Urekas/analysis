@@ -623,7 +623,7 @@
             width: 100%;
             height: 100%;
             background: rgba(0, 0, 0, 0.8);
-            z-index: 999;
+            z-index: 2500;
             justify-content: center;
             align-items: center;
             backdrop-filter: blur(5px);
@@ -889,7 +889,7 @@
                 z-index: 100;
             }
 
-            줘 .top-btn {
+            .top-btn {
                 padding: 10px 12px;
                 font-size: 0.85rem;
                 flex: 1 1 auto;
@@ -2368,13 +2368,14 @@
             canvas.on('mouse:down', function (o) {
                 if (isPalmRejection && o.e && (o.e.pointerType === 'touch' || o.e.touches)) return;
 
-                // 모바일 환경에서 선택(Select) 모드일 때 캔버스 좌/우 터치 시 5초 스킵 (유튜브 스타일)
+                // 모바일 환경에서 선택(Select) 모드일 때 캔버스 좌/우 터치 시 5초 스킵, 중앙 터치 시 재생/일시정지
                 if (currentMode === 'select' && o.e && (o.e.type.includes('touch') || o.e.pointerType === 'touch')) {
                     const isMobile = window.innerWidth <= 768 || (window.innerWidth <= 950 && window.matchMedia('(orientation: landscape)').matches);
                     if (isMobile) {
                         const p = canvas.getPointer(o.e);
                         if (p.x < canvas.width * 0.3) { handleSkip('rewind'); return; }
                         if (p.x > canvas.width * 0.7) { handleSkip('forward'); return; }
+                        handleSkip('toggle'); return; // 중앙 터치 시 재생/일시정지
                     }
                 }
 
