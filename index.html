@@ -38,7 +38,9 @@
             font-family: 'S-CoreDream-6Bold', sans-serif;
             overflow: hidden;
             display: flex;
-            height: 100vh;
+            height: 100vh; /* fallback */
+            height: calc(var(--vh, 1vh) * 100);
+            height: 100dvh;
             user-select: none;
             -webkit-user-select: none;
         }
@@ -1140,6 +1142,7 @@
             <div class="scene-toggle-btn"><i class="fa-solid fa-chevron-right" id="sceneToggleIcon"></i></div>
         </div>
         <div class="top-menu">
+            <button class="top-btn" onclick="toggleFullScreen()" style="color:#2ecc71;" title="전체화면 모드"><i class="fa-solid fa-expand"></i></button>
             <button class="top-btn mobile-only" onclick="openMatchCenter()" style="color:var(--accent);"
                 title="GitHub 매치 센터"><i class="fa-brands fa-github"></i></button>
             <button class="top-btn mobile-only" onclick="toggleMobileTools()" style="color:#e67e22;" title="드로잉 도구함"><i
@@ -1379,6 +1382,37 @@
     <script src="https://www.youtube.com/iframe_api"></script>
 
     <script>
+        // 모바일 뷰포트 높이 최적화
+        function setMobileHeight() {
+            let vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+        }
+        window.addEventListener('resize', setMobileHeight);
+        window.addEventListener('orientationchange', setMobileHeight);
+        setMobileHeight();
+
+        // 전체화면 토글
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen();
+                } else if (document.documentElement.webkitRequestFullscreen) { /* Safari */
+                    document.documentElement.webkitRequestFullscreen();
+                } else if (document.documentElement.msRequestFullscreen) { /* IE11 */
+                    document.documentElement.msRequestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) { /* Safari */
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) { /* IE11 */
+                    document.msExitFullscreen();
+                }
+            }
+            setTimeout(setMobileHeight, 300); // 전체화면 전환 후 뷰포트 갱신
+        }
+
         // --- 🚀 앱 초기화 및 통합 로직 ---
         window.addEventListener('DOMContentLoaded', () => {
             // Fabric 초기화
