@@ -849,18 +849,21 @@
 
             .workspace {
                 flex: none;
-                height: 42vh; /* 탑메뉴 포함하여 높이 조금 더 확보 */
+                height: 42vh;
+                /* 탑메뉴 포함하여 높이 조금 더 확보 */
             }
 
             .scene-sidebar {
                 width: 100%;
-                flex: 1; /* 나머지 영역 모두 차지 */
+                flex: 1;
+                /* 나머지 영역 모두 차지 */
                 height: auto;
                 border-left: none;
                 border-top: 2px solid #333;
                 z-index: 1000;
                 overflow-y: auto;
-                -webkit-overflow-scrolling: touch; /* 스크롤 최적화 */
+                -webkit-overflow-scrolling: touch;
+                /* 스크롤 최적화 */
             }
 
             .scene-sidebar.closed {
@@ -869,7 +872,8 @@
             }
 
             .sidebar-toggle-area {
-                display: none !important; /* 모바일 세로에서는 중앙 토글 비활성화 */
+                display: none !important;
+                /* 모바일 세로에서는 중앙 토글 비활성화 */
             }
 
             .top-menu {
@@ -883,7 +887,7 @@
                 z-index: 100;
             }
 
-            .top-btn {
+            줘 .top-btn {
                 padding: 10px 12px;
                 font-size: 0.85rem;
                 flex: 1 1 auto;
@@ -892,11 +896,13 @@
             }
 
             .tab-btn {
-                padding: 10px 0; /* 터치 탭 높이 다이어트 */
+                padding: 10px 0;
+                /* 터치 탭 높이 다이어트 */
             }
 
             .version-display {
-                display: none; /* 버전을 가려 영상 가시성 확보 */
+                display: none;
+                /* 버전을 가려 영상 가시성 확보 */
             }
 
             /* 모바일 세로: 스크러버를 화면 하단 고정 오버레이로 전환 */
@@ -931,14 +937,31 @@
             .modal-box {
                 width: 95%;
                 padding: 15px;
-                max-height: 95vh;
+                max-height: 75vh; /* 하단 공간 확보 */
+                margin-bottom: 60px; /* 클릭 시 스크러버에 방해받지 않도록 위로 띄움 */
             }
+
             .form-row {
                 grid-template-columns: 1fr !important;
             }
+
             .m-tab {
                 font-size: 0.85rem;
                 padding: 8px;
+                flex: 1;
+                text-align: center;
+            }
+            .modal-tabs {
+                flex-wrap: wrap; /* 탭 줄바꿈 */
+                gap: 5px;
+            }
+            .comp-card, .match-card {
+                padding: 10px;
+                margin-bottom: 6px;
+                font-size: 0.9rem;
+            }
+            .comp-card {
+                gap: 10px;
             }
         }
 
@@ -1119,7 +1142,8 @@
         <div class="top-menu">
             <button class="top-btn mobile-only" onclick="openMatchCenter()" style="color:var(--accent);"
                 title="GitHub 매치 센터"><i class="fa-brands fa-github"></i></button>
-            <button class="top-btn mobile-only" onclick="toggleMobileTools()" style="color:#e67e22;" title="드로잉 도구함"><i class="fa-solid fa-pen-ruler"></i> 도구</button>
+            <button class="top-btn mobile-only" onclick="toggleMobileTools()" style="color:#e67e22;" title="드로잉 도구함"><i
+                    class="fa-solid fa-pen-ruler"></i> 도구</button>
             <label for="videoInputMobile" class="top-btn mobile-only" style="color:#3498db; cursor:pointer;"
                 title="로컬 영상 열기"><i class="fa-solid fa-file-video"></i></label>
             <input type="file" id="videoInputMobile" style="display:none;" accept="video/*">
@@ -1136,7 +1160,9 @@
             <video id="local-video" playsinline crossOrigin="anonymous"></video>
             <div class="canvas-wrapper" id="canvasWrapper"><canvas id="c"></canvas></div>
             <div class="version-display">v124 (Mobile UX)</div>
-            <div id="skip-feedback" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.7); color:white; padding:15px 25px; border-radius:30px; font-size:1.5rem; font-weight:bold; pointer-events:none; opacity:0; transition:opacity 0.2s; z-index:100; display:flex; align-items:center; gap:10px;"></div>
+            <div id="skip-feedback"
+                style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.7); color:white; padding:15px 25px; border-radius:30px; font-size:1.5rem; font-weight:bold; pointer-events:none; opacity:0; transition:opacity 0.2s; z-index:100; display:flex; align-items:center; gap:10px;">
+            </div>
         </div>
         <div class="scrubber-area" id="videoScrubber">
             <button class="scrubber-btn" onclick="videoControl('rewind')" title="-5초 (←)"><i
@@ -1262,7 +1288,9 @@
                 <div style="margin-bottom:10px; color:#aaa; font-size:0.85rem;">
                     * 순서 변경(▲/▼), 수정(✏️), 삭제(🗑️) 후 반드시 하단의 <b>'변경사항 깃허브에 최종 저장'</b> 버튼을 누르세요.
                 </div>
-                <div id="manage-list-container" style="max-height: 350px; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-right:5px;"></div>
+                <div id="manage-list-container"
+                    style="max-height: 350px; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-right:5px;">
+                </div>
                 <button onclick="saveManifestToGitHub()" class="btn-submit"
                     style="width: 100%; margin-top: 15px; background: #e67e22;"><i
                         class="fa-solid fa-cloud-arrow-up"></i> 변경사항 깃허브에 최종 저장</button>
@@ -1554,13 +1582,13 @@
 
         function toggleMobileTools() {
             const sb = document.querySelector('.sidebar');
-            if(sb) sb.classList.toggle('mobile-show');
+            if (sb) sb.classList.toggle('mobile-show');
         }
 
         function handleSkip(act) {
             videoControl(act);
             const fb = document.getElementById('skip-feedback');
-            if(fb) {
+            if (fb) {
                 fb.innerHTML = act === 'rewind' ? '<i class="fa-solid fa-backward-step"></i> -5초' : '+5초 <i class="fa-solid fa-forward-step"></i>';
                 fb.style.opacity = '1';
                 setTimeout(() => fb.style.opacity = '0', 600);
@@ -2269,13 +2297,13 @@
             if (typeof isVideoInteractive !== 'undefined' && isVideoInteractive) toggleVideoInteraction();
             currentMode = mode;
             document.querySelectorAll('.sidebar .tool-btn').forEach(b => b.classList.remove('active'));
-            
+
             // 모바일 도구함에서 도구 선택 시 자동으로 도구함을 닫음
             const sb = document.querySelector('.sidebar');
-            if(sb && sb.classList.contains('mobile-show')) {
+            if (sb && sb.classList.contains('mobile-show')) {
                 sb.classList.remove('mobile-show');
             }
-            
+
             document.getElementById('btn-' + mode)?.classList.add('active');
 
             const guide = document.getElementById('guide-msg');
@@ -2305,7 +2333,7 @@
         function initCanvasEvents() {
             canvas.on('mouse:down', function (o) {
                 if (isPalmRejection && o.e && (o.e.pointerType === 'touch' || o.e.touches)) return;
-                
+
                 // 모바일 환경에서 선택(Select) 모드일 때 캔버스 좌/우 터치 시 5초 스킵 (유튜브 스타일)
                 if (currentMode === 'select' && o.e && (o.e.type.includes('touch') || o.e.pointerType === 'touch')) {
                     const isMobile = window.innerWidth <= 768 || (window.innerWidth <= 950 && window.matchMedia('(orientation: landscape)').matches);
@@ -2555,8 +2583,8 @@
         // --- 기타 유틸리티 ---
         async function startCleanRecording() {
             const selectedScenes = savedScenes.filter(s => s.isSelected !== false);
-            if(selectedScenes.length === 0) return alert("녹화할 장면을 선택해주세요.");
-            if(currentMediaType === 'none' || currentMediaType === 'image') return alert("시퀀스 추출은 비디오(로컬/유튜브) 모드에서만 지원합니다.");
+            if (selectedScenes.length === 0) return alert("녹화할 장면을 선택해주세요.");
+            if (currentMediaType === 'none' || currentMediaType === 'image') return alert("시퀀스 추출은 비디오(로컬/유튜브) 모드에서만 지원합니다.");
 
             const preRollStr = prompt("1. 분석 지점 [몇 초 전]부터 영상을 재생할까요?", "1.5");
             if (preRollStr === null) return;
@@ -2566,7 +2594,7 @@
             if (postRollStr === null) return;
 
             const preRoll = parseFloat(preRollStr) || 1.5;
-            const holdTime = (parseFloat(holdTimeStr) || 3.0) * 1000; 
+            const holdTime = (parseFloat(holdTimeStr) || 3.0) * 1000;
             const postRoll = parseFloat(postRollStr) || 0;
 
             const localVideo = document.getElementById('local-video');
@@ -2587,7 +2615,7 @@
                     screenVideo.muted = true;
                     screenVideo.play();
                     await new Promise(r => screenVideo.onloadedmetadata = r);
-                } catch(e) {
+                } catch (e) {
                     return alert("화면 공유 권한이 거부되어 유튜브 녹화를 취소합니다.");
                 }
             }
@@ -2595,19 +2623,19 @@
             const stream = recCanvas.captureStream(60);
             let options = { mimeType: 'video/webm; codecs=vp9', videoBitsPerSecond: 15000000 };
             let ext = 'webm';
-            
-            if (MediaRecorder.isTypeSupported('video/mp4')) { 
-                options = { mimeType: 'video/mp4', videoBitsPerSecond: 15000000 }; 
-                ext = 'mp4'; 
-            } else if (MediaRecorder.isTypeSupported('video/webm; codecs=h264')) { 
-                options = { mimeType: 'video/webm; codecs=h264', videoBitsPerSecond: 15000000 }; 
-                ext = 'mp4'; 
+
+            if (MediaRecorder.isTypeSupported('video/mp4')) {
+                options = { mimeType: 'video/mp4', videoBitsPerSecond: 15000000 };
+                ext = 'mp4';
+            } else if (MediaRecorder.isTypeSupported('video/webm; codecs=h264')) {
+                options = { mimeType: 'video/webm; codecs=h264', videoBitsPerSecond: 15000000 };
+                ext = 'mp4';
             }
-            
+
             const recorder = new MediaRecorder(stream, options);
             const chunks = [];
             recorder.ondataavailable = e => chunks.push(e.data);
-            
+
             // 🔄 UI 요소 제어 변수 (녹화 화면에 UI가 캡처되는 것 방지)
             const topMenu = document.querySelector('.top-menu');
             const toggleArea = document.querySelector('.sidebar-toggle-area');
@@ -2636,7 +2664,7 @@
             const mediaContainer = document.getElementById('mediaContainer');
 
             function renderComposite() {
-                if(!isRecordingLoop) return;
+                if (!isRecordingLoop) return;
 
                 if (currentMediaType === 'youtube' && screenVideo) {
                     const rect = mediaContainer.getBoundingClientRect();
@@ -2649,16 +2677,16 @@
 
                     ctx.drawImage(screenVideo, cropX, cropY, cropW, cropH, 0, 0, recCanvas.width, recCanvas.height);
                 } else if (currentMediaType === 'local') {
-                    if(localVideo && localVideo.readyState >= 2) {
+                    if (localVideo && localVideo.readyState >= 2) {
                         ctx.drawImage(localVideo, 0, 0, recCanvas.width, recCanvas.height);
                     } else {
-                        ctx.fillStyle = "black"; ctx.fillRect(0,0, recCanvas.width, recCanvas.height);
+                        ctx.fillStyle = "black"; ctx.fillRect(0, 0, recCanvas.width, recCanvas.height);
                     }
                     if (canvas && canvas.getElement()) {
                         ctx.drawImage(canvas.getElement(), 0, 0, recCanvas.width, recCanvas.height);
                     }
                 }
-                
+
                 requestAnimationFrame(renderComposite);
             }
 
@@ -2670,29 +2698,29 @@
             if (statusMsg) {
                 statusMsg.style.top = 'auto';
                 // bottom-panel(70px) 내부로 위치시켜 mediaContainer 캡처 영역에서 제외
-                statusMsg.style.bottom = '15px'; 
+                statusMsg.style.bottom = '15px';
             }
 
             recorder.start();
             renderComposite();
             showStatus(`선택된 장면 영상 추출 중... (${ext})`, true);
 
-            const timeline = [...selectedScenes].sort((a,b) => a.time - b.time);
-            
+            const timeline = [...selectedScenes].sort((a, b) => a.time - b.time);
+
             for (let s of timeline) {
                 let targetTime = Math.max(0, s.time - preRoll);
 
                 if (currentMediaType === 'local') {
                     if (localVideo) localVideo.currentTime = targetTime;
                     await new Promise(res => {
-                        const onSeeked = () => { if(localVideo) localVideo.removeEventListener('seeked', onSeeked); res(); };
+                        const onSeeked = () => { if (localVideo) localVideo.removeEventListener('seeked', onSeeked); res(); };
                         if (localVideo && localVideo.seeking) localVideo.addEventListener('seeked', onSeeked); else res();
                     });
-                    if (canvas) canvas.clear(); 
+                    if (canvas) canvas.clear();
                     if (localVideo) localVideo.play();
                     await new Promise(res => {
                         const check = () => {
-                            if(localVideo && localVideo.currentTime >= s.time) { localVideo.pause(); res(); }
+                            if (localVideo && localVideo.currentTime >= s.time) { localVideo.pause(); res(); }
                             else requestAnimationFrame(check);
                         }; check();
                     });
@@ -2702,7 +2730,7 @@
                     ytPlayer.playVideo();
                     await new Promise(res => {
                         const check = () => {
-                            if(ytPlayer.getCurrentTime() >= s.time) { ytPlayer.pauseVideo(); res(); }
+                            if (ytPlayer.getCurrentTime() >= s.time) { ytPlayer.pauseVideo(); res(); }
                             else requestAnimationFrame(check);
                         }; check();
                     });
@@ -2712,7 +2740,7 @@
                     if (canvas) {
                         canvas.loadFromJSON(s.art, () => {
                             canvas.renderAll();
-                            setTimeout(res, holdTime); 
+                            setTimeout(res, holdTime);
                         });
                     } else {
                         setTimeout(res, holdTime);
@@ -2726,8 +2754,8 @@
                         const endPostRollTime = (localVideo ? localVideo.currentTime : 0) + postRoll;
                         await new Promise(res => {
                             const checkPost = () => {
-                                if(localVideo && (localVideo.currentTime >= endPostRollTime || localVideo.currentTime >= localVideo.duration)) { 
-                                    localVideo.pause(); res(); 
+                                if (localVideo && (localVideo.currentTime >= endPostRollTime || localVideo.currentTime >= localVideo.duration)) {
+                                    localVideo.pause(); res();
                                 } else requestAnimationFrame(checkPost);
                             }; checkPost();
                         });
@@ -2737,8 +2765,8 @@
                         const duration = ytPlayer.getDuration();
                         await new Promise(res => {
                             const checkPost = () => {
-                                if(ytPlayer.getCurrentTime() >= endPostRollTime || ytPlayer.getCurrentTime() >= duration) { 
-                                    ytPlayer.pauseVideo(); res(); 
+                                if (ytPlayer.getCurrentTime() >= endPostRollTime || ytPlayer.getCurrentTime() >= duration) {
+                                    ytPlayer.pauseVideo(); res();
                                 } else requestAnimationFrame(checkPost);
                             }; checkPost();
                         });
@@ -2835,39 +2863,39 @@
         function switchModalTab(t) { document.getElementById('m-guide').classList.toggle('active', t === 'guide'); document.getElementById('m-shortcuts').classList.toggle('active', t === 'shortcuts'); if (t === 'shortcuts') initShortcuts(); }
         function showStatus(m, rec = false) { const el = document.getElementById('status-msg'); el.innerText = m; el.style.display = 'block'; if (!rec) setTimeout(() => el.style.display = 'none', 3000); }
         function saveScene() {
-            if(!canvas) return;
+            if (!canvas) return;
             const art = JSON.stringify(canvas.toJSON());
             const localVideo = document.getElementById('local-video');
-            let time = 0; if(currentMediaType === 'local' && localVideo) time = localVideo.currentTime; else if(currentMediaType === 'youtube' && isYtReady) time = ytPlayer.getCurrentTime();
+            let time = 0; if (currentMediaType === 'local' && localVideo) time = localVideo.currentTime; else if (currentMediaType === 'youtube' && isYtReady) time = ytPlayer.getCurrentTime();
             const sceneId = Date.now(); const scene = { id: sceneId, art: art, time: time, type: currentMediaType, label: `Scene ${savedScenes.length + 1}`, isSelected: true };
-            savedScenes.push(scene); renderSceneList(); 
+            savedScenes.push(scene); renderSceneList();
             showStatus("현재 장면이 저장되었습니다.");
-            
+
             setTimeout(() => {
-                if(confirm("장면이 안전하게 저장되었습니다!\n새로운 장면 분석을 위해 화면의 그림을 지울까요?")) {
+                if (confirm("장면이 안전하게 저장되었습니다!\n새로운 장면 분석을 위해 화면의 그림을 지울까요?")) {
                     canvas.clear();
                 }
             }, 100);
         }
 
         function loadScene(id) {
-            const scene = savedScenes.find(s => s.id === id); if(!scene) return;
-            if(scene.type !== currentMediaType && scene.type !== 'image') { if(!confirm("미디어 소스가 다릅니다. 전환하시겠습니까?")) return; }
+            const scene = savedScenes.find(s => s.id === id); if (!scene) return;
+            if (scene.type !== currentMediaType && scene.type !== 'image') { if (!confirm("미디어 소스가 다릅니다. 전환하시겠습니까?")) return; }
             canvas.loadFromJSON(scene.art, canvas.renderAll.bind(canvas));
             const localVideo = document.getElementById('local-video');
-            if(scene.type === 'local' && localVideo) localVideo.currentTime = scene.time; else if(scene.type === 'youtube' && isYtReady && ytPlayer && ytPlayer.seekTo) ytPlayer.seekTo(scene.time, true);
+            if (scene.type === 'local' && localVideo) localVideo.currentTime = scene.time; else if (scene.type === 'youtube' && isYtReady && ytPlayer && ytPlayer.seekTo) ytPlayer.seekTo(scene.time, true);
             showStatus("장면을 불러왔습니다.");
         }
 
-        function removeScene(id, event) { 
-            event.stopPropagation(); 
-            savedScenes = savedScenes.filter(s => s.id !== id); 
-            renderSceneList(); 
+        function removeScene(id, event) {
+            event.stopPropagation();
+            savedScenes = savedScenes.filter(s => s.id !== id);
+            renderSceneList();
         }
-        
+
         function renderSceneList() {
-            const listEl = document.getElementById('sceneList'); 
-            if(!listEl) return;
+            const listEl = document.getElementById('sceneList');
+            if (!listEl) return;
             listEl.innerHTML = '';
             savedScenes.forEach(scene => {
                 let timeStr = (scene.type === 'image') ? 'Image' : formatTime(scene.time);
