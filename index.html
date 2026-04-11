@@ -587,6 +587,26 @@
         }
         .qn-close:active { color: #fff; }
 
+        /* 가로 모드: pill을 우측 하단으로 이동 + 더 작게 */
+        @media (orientation: landscape) and (max-width: 1024px) {
+            #quick-nav-pill {
+                bottom: 60px;   /* 스크러버 위 */
+                right: 12px;
+                left: auto;
+                transform: none;
+                padding: 5px 10px;
+                gap: 6px;
+            }
+            .qn-btn {
+                width: 30px; height: 30px;
+                font-size: 0.9rem;
+            }
+            .qn-label {
+                font-size: 0.72rem;
+                min-width: 48px;
+            }
+        }
+
         .data-group-content {
             display: none;
             flex-direction: column;
