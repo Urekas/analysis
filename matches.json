@@ -230,6 +230,13 @@
       "video": "https://www.youtube.com/watch?v=Dkgurb7p0Zw",
       "data": "data/2026 4월 여자대표팀/한국 vs 일본_0411 1차전.xml",
       "date": "2026-04-11"
+    },
+    {
+      "title": "한국 vs 일본_0414",
+      "competition": "2026 남자대표팀",
+      "video": "https://www.youtube.com/watch?v=tR8L5UgKquE",
+      "data": "data/2026 남자대표팀/한국 vs 일본_0414.xml",
+      "date": "2026-04-14"
     }
   ]
 }
