@@ -328,6 +328,13 @@
       "video": "https://www.youtube.com/watch?v=1RlJJCqcHZc",
       "data": "data/2026 남자대표팀/한국 vs 성남_20260521.xml",
       "date": "2026-05-22"
+    },
+    {
+      "title": "한국 vs 성남_20260519",
+      "competition": "2026 남자대표팀",
+      "video": "https://www.youtube.com/watch?v=X8rGOR5r_hQ",
+      "data": "data/2026 남자대표팀/한국 vs 성남_20260519.xml",
+      "date": "2026-05-22"
     }
   ]
 }
