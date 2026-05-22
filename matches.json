@@ -314,6 +314,13 @@
       "video": "https://www.youtube.com/watch?v=IbpgFxvbyBE",
       "data": "data/2026 4월 여자대표팀/한국vsKT_20260505.xml",
       "date": "2026-05-14"
+    },
+    {
+      "title": "한국 vs KT_20260521",
+      "competition": "2026 여자대표팀",
+      "video": "https://www.youtube.com/watch?v=BzHwqKDR4RY",
+      "data": "data/2026 여자대표팀/한국 vs KT_20260521.xml",
+      "date": "2026-05-22"
     }
   ]
 }
