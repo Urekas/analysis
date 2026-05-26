@@ -335,6 +335,13 @@
       "video": "https://www.youtube.com/watch?v=X8rGOR5r_hQ",
       "data": "data/2026 남자대표팀/한국 vs 성남_20260519.xml",
       "date": "2026-05-22"
+    },
+    {
+      "title": "한국vsKT_20260526",
+      "competition": "2026 여자대표팀",
+      "video": "https://www.youtube.com/watch?v=A8dIGj5jOH4",
+      "data": "data/2026 여자대표팀/한국vsKT_20260526.xml",
+      "date": "2026-05-26"
     }
   ]
 }
