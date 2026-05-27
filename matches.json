@@ -342,6 +342,13 @@
       "video": "https://www.youtube.com/watch?v=A8dIGj5jOH4",
       "data": "data/2026 여자대표팀/한국vsKT_20260526.xml",
       "date": "2026-05-26"
+    },
+    {
+      "title": "한국vs깐수성_20260527",
+      "competition": "2026 남자대표팀",
+      "video": "https://www.youtube.com/watch?v=AXC8tdMuJEo",
+      "data": "data/2026 남자대표팀/한국vs깐수성_20260527.xml",
+      "date": "2026-05-27"
     }
   ]
 }
