@@ -391,6 +391,13 @@
       "video": "https://www.youtube.com/watch?v=hUSuFTWYX4c",
       "data": "data/2026 여자대표팀/20260716 한국vs아산고.xml",
       "date": "2026-07-16"
+    },
+    {
+      "title": "20260716 한국vs상무",
+      "competition": "2026 남자대표팀",
+      "video": "https://www.youtube.com/watch?v=CjR5DIA-M78",
+      "data": "data/2026 남자대표팀/20260716 한국vs상무.xml",
+      "date": "2026-07-16"
     }
   ]
 }
