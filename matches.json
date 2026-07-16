@@ -384,6 +384,13 @@
       "video": "https://www.youtube.com/watch?v=ZX1Dskje1NQ",
       "data": "data/2026 여자대표팀/20260704 한국vs주니어.xml",
       "date": "2026-07-04"
+    },
+    {
+      "title": "20260716 한국vs아산고",
+      "competition": "2026 여자대표팀",
+      "video": "https://www.youtube.com/watch?v=hUSuFTWYX4c",
+      "data": "data/2026 여자대표팀/20260716 한국vs아산고.xml",
+      "date": "2026-07-16"
     }
   ]
 }
